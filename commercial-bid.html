@@ -1,0 +1,1887 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MMC Commercial Bid Analysis</title>
+
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script>if(typeof pdfjsLib!=="undefined")pdfjsLib.GlobalWorkerOptions.workerSrc="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";</script>
+<style>
+
+:root{
+  --bg:#f4f3f0;--surface:#fff;--surface2:#f9f8f6;
+  --border:#e2e0db;--border2:#d0cec8;
+  --text:#1a1916;--text2:#6b6860;--text3:#9b9890;
+  --accent:#1a56db;--accent-h:#1447c0;--accent-l:#eef2ff;--accent-bd:#bfcffb;
+  --success:#0a7c42;--success-l:#ecfdf5;--success-bd:#6ee7b7;
+  --warn:#b45309;--warn-l:#fffbeb;--warn-bd:#fcd34d;
+  --danger:#c0392b;--danger-l:#fef2f2;--danger-bd:#fca5a5;
+  --shadow:0 1px 3px rgba(0,0,0,.08),0 1px 2px rgba(0,0,0,.04);
+  --shadow-md:0 4px 12px rgba(0,0,0,.08),0 2px 4px rgba(0,0,0,.04);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'IBM Plex Sans',system-ui,sans-serif;font-size:14px;line-height:1.5;color:var(--text);background:var(--bg);min-height:100vh}
+
+/* -- TOPBAR -- */
+.topbar{background:var(--surface);border-bottom:1px solid var(--border);padding:0 28px;height:54px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:200;box-shadow:var(--shadow)}
+.brand{display:flex;align-items:center;gap:10px;font-weight:700;font-size:15px;letter-spacing:-.02em}
+.brand-mark{width:28px;height:28px;background:var(--accent);border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:14px}
+.topbar-right{display:flex;align-items:center;gap:8px}
+
+/* -- CHIPS -- */
+.chip{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;border:1px solid transparent;transition:all .15s;font-family:'IBM Plex Sans',sans-serif}
+.chip.idle{background:var(--surface2);border-color:var(--border);color:var(--text2)}
+.chip.ok{background:var(--success-l);border-color:var(--success-bd);color:var(--success)}
+.chip.err{background:var(--danger-l);border-color:var(--danger-bd);color:var(--danger)}
+.chip.busy{background:var(--warn-l);border-color:var(--warn-bd);color:var(--warn)}
+.chip .dot{width:6px;height:6px;border-radius:50%;background:currentColor;flex-shrink:0}
+.chip.ok .dot,.chip.busy .dot{animation:blink 1.4s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+.settings-btn{background:var(--surface2);border:1px solid var(--border);color:var(--text2);padding:5px 12px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;transition:all .15s;font-family:'IBM Plex Sans',sans-serif}
+.settings-btn:hover{border-color:var(--accent);color:var(--accent)}
+
+/* -- ERROR BANNER -- */
+.err-banner{display:none;align-items:center;gap:10px;padding:10px 28px;background:var(--danger-l);border-bottom:1px solid var(--danger-bd);font-size:13px;color:var(--danger)}
+
+/* -- STEPS BAR -- */
+.steps-wrap{max-width:900px;margin:0 auto;padding:20px 20px 0;display:none}
+.steps-wrap.visible{display:block}
+#steps-wrap{display:none}
+.steps{display:flex;background:var(--surface);border:1px solid var(--border);border-radius:8px;overflow:hidden;box-shadow:var(--shadow)}
+.step{flex:1;padding:10px 14px;display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text3);border-right:1px solid var(--border);transition:all .2s;font-weight:500}
+.step:last-child{border-right:none}
+.step.active{color:var(--accent);background:var(--accent-l)}
+.step.done{color:var(--success);background:var(--success-l)}
+.step-circle{width:20px;height:20px;border-radius:50%;background:var(--border);color:var(--text3);font-size:10px;font-weight:600;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.step.active .step-circle{background:var(--accent);color:#fff}
+.step.done .step-circle{background:var(--success);color:#fff}
+.step-line{display:none}
+
+/* -- PANELS -- */
+.panel{display:none}.panel.active{display:block}
+
+/* -- PANEL WRAP -- */
+.panel{max-width:900px;margin:0 auto;padding:24px 20px 60px}
+
+/* -- CARD -- */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:24px;margin-bottom:16px;box-shadow:var(--shadow)}
+.card-title{font-size:15px;font-weight:600;margin-bottom:4px;letter-spacing:-.02em;display:flex;align-items:center;gap:8px}
+.card-title .icon{font-size:16px}
+
+/* -- SETUP CARD -- */
+.setup-card{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:22px;margin-bottom:14px;box-shadow:var(--shadow)}
+.setup-card-title{font-size:13px;font-weight:600;margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.setup-icon{width:32px;height:32px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:15px}
+.setup-icon.blue{background:var(--accent-l)}
+.setup-icon.teal{background:var(--success-l)}
+
+/* -- FORM -- */
+.field{margin-bottom:14px}
+.field:last-child{margin-bottom:0}
+.field label{display:block;font-size:11px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px}
+.field input,.field select{width:100%;padding:8px 10px;border:1px solid var(--border2);border-radius:6px;font:inherit;font-size:13px;color:var(--text);background:var(--surface);transition:border-color .15s,box-shadow .15s}
+.field input:focus,.field select:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(26,86,219,.1)}
+.field input::placeholder{color:var(--text3)}
+.field select option{background:var(--surface)}
+.field .hint{font-size:11px;color:var(--text3);margin-top:4px}
+.row-2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media(max-width:600px){.row-2{grid-template-columns:1fr}}
+
+/* -- BUTTONS -- */
+.btn{padding:8px 16px;border-radius:6px;font-family:'IBM Plex Sans',sans-serif;font-size:13px;font-weight:600;cursor:pointer;border:1px solid transparent;transition:all .15s;display:inline-flex;align-items:center;gap:6px}
+.btn-primary{background:var(--accent);color:#fff;border-color:var(--accent)}
+.btn-primary:hover:not(:disabled){background:var(--accent-h)}
+.btn-teal{background:var(--success);color:#fff;border-color:var(--success)}
+.btn-teal:hover:not(:disabled){background:#086335}
+.btn-ghost{background:var(--surface);border-color:var(--border2);color:var(--text2)}
+.btn-ghost:hover:not(:disabled){border-color:var(--accent);color:var(--accent)}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.btn-full{width:100%;justify-content:center;padding:10px}
+.btn-row{display:flex;gap:8px;margin-top:6px}
+
+/* -- DROP ZONE -- */
+.drop-zone{border:2px dashed var(--border2);border-radius:8px;padding:36px 20px;text-align:center;cursor:pointer;position:relative;transition:all .15s;background:var(--surface2);margin-bottom:14px}
+.drop-zone:hover,.drop-zone.over{border-color:var(--accent);background:var(--accent-l)}
+.drop-zone input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%}
+.dz-icon{font-size:32px;margin-bottom:8px}
+.dz-text{font-size:13px;color:var(--text2)}
+.dz-text strong{color:var(--accent)}
+
+/* -- FILE LIST -- */
+.file-list{border:1px solid var(--border);border-radius:8px;overflow:hidden;margin-bottom:14px}
+.file-row{display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--surface);border-bottom:1px solid var(--border);font-size:13px}
+.file-row:last-child{border-bottom:none}
+.file-row .fi{font-size:18px;flex-shrink:0}
+.file-row .fn{flex:1;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px}
+.file-row .fs{color:var(--text3);flex-shrink:0;font-size:11px;font-family:'IBM Plex Mono',monospace}
+.file-row select{padding:3px 8px;background:var(--surface);border:1px solid var(--border2);border-radius:4px;color:var(--text);font-size:11px;font-family:'IBM Plex Sans',sans-serif;cursor:pointer;outline:none;flex-shrink:0;font-weight:600}
+.file-row .rm{background:none;border:none;color:var(--text3);cursor:pointer;font-size:15px;flex-shrink:0;transition:color .15s;padding:2px 4px;border-radius:3px}
+.file-row .rm:hover{color:var(--danger);background:var(--danger-l)}
+
+/* -- INLINE STATUS -- */
+.istat{margin-top:10px;padding:8px 12px;border-radius:6px;font-size:12px;display:none;line-height:1.5}
+.istat.v{display:block}
+.istat.ok{background:var(--success-l);color:var(--success);border:1px solid var(--success-bd)}
+.istat.err{background:var(--danger-l);color:var(--danger);border:1px solid var(--danger-bd)}
+.istat.info{background:var(--accent-l);color:var(--accent);border:1px solid var(--accent-bd)}
+
+/* -- PROGRESS -- */
+.prog-wrap{display:none;margin-top:14px}
+.prog-wrap.v{display:block}
+.prog-lbl{font-size:12px;color:var(--text2);margin-bottom:5px}
+.prog-track{height:4px;background:var(--border);border-radius:2px;overflow:hidden}
+.prog-fill{height:100%;background:var(--accent);border-radius:2px;transition:width .4s ease;width:0}
+
+/* -- REVIEW TABLE -- */
+.rev-table{width:100%;border-collapse:collapse;font-size:13px}
+.rev-table th{text-align:left;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--text2);padding:8px 12px;border-bottom:1px solid var(--border);background:var(--surface2)}
+.rev-table td{padding:9px 12px;border-bottom:1px solid var(--border)}
+.rev-table tr:last-child td{border-bottom:none}
+.rev-table tr:hover td{background:var(--surface2)}
+.role-badge{display:inline-flex;align-items:center;gap:5px;padding:3px 8px;border-radius:4px;font-size:11px;font-weight:600}
+.role-rfq{background:var(--accent-l);color:var(--accent)}
+.role-vendor{background:var(--success-l);color:var(--success)}
+
+/* -- ANALYSIS STEPS -- */
+.analysis-steps{display:flex;flex-direction:column;gap:10px}
+.astep{display:flex;align-items:flex-start;gap:12px;padding:12px 14px;border-radius:8px;border:1px solid var(--border);background:var(--surface)}
+.astep.active{border-color:var(--accent-bd);background:var(--accent-l)}
+.astep.done{border-color:var(--success-bd);background:var(--success-l)}
+.astep.err{border-color:var(--danger-bd);background:var(--danger-l)}
+.astep-icon{font-size:18px;flex-shrink:0;margin-top:1px}
+.astep-body{flex:1}
+.astep-title{font-size:13px;font-weight:600;margin-bottom:2px}
+.astep-desc{font-size:12px;color:var(--text2)}
+.astep.active .astep-title{color:var(--accent)}
+.astep.done .astep-title{color:var(--success)}
+
+/* -- RESULTS -- */
+.results-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px}
+@media(max-width:640px){.results-grid{grid-template-columns:1fr}}
+
+.exec-summary{background:var(--surface);border:1px solid var(--border);border-left:4px solid var(--accent);border-radius:8px;padding:20px;margin-bottom:16px;box-shadow:var(--shadow)}
+.exec-summary h3{font-size:11px;font-weight:600;color:var(--accent);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px}
+.exec-summary p{font-size:13px;line-height:1.7;color:var(--text)}
+
+.rec-card{background:var(--success-l);border:1px solid var(--success-bd);border-radius:8px;padding:20px;margin-bottom:16px}
+.rec-card h3{font-size:11px;font-weight:600;color:var(--success);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px}
+.rec-winner{font-size:20px;font-weight:700;color:var(--success);margin-bottom:8px}
+.rec-just{font-size:13px;line-height:1.65;color:var(--text)}
+
+.vendor-card{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:18px;position:relative;box-shadow:var(--shadow)}
+.vendor-card.winner{border-color:var(--success-bd);background:linear-gradient(160deg,var(--surface),var(--success-l))}
+.winner-badge{position:absolute;top:-1px;right:14px;background:var(--success);color:#fff;font-size:10px;font-weight:700;padding:3px 8px;border-radius:0 0 6px 6px;letter-spacing:.04em}
+.vc-name{font-size:14px;font-weight:700;margin-bottom:4px;color:var(--text)}
+.vc-total{font-size:20px;font-weight:700;color:var(--accent);font-family:'IBM Plex Mono',monospace;margin-bottom:12px;letter-spacing:-.02em}
+.vc-total.winner-price{color:var(--success)}
+.vc-row{display:flex;justify-content:space-between;align-items:baseline;padding:5px 0;border-bottom:1px solid var(--border);font-size:12px}
+.vc-row:last-child{border-bottom:none}
+.vc-row .lbl{color:var(--text2)}
+.vc-row .val{color:var(--text);font-size:11px;text-align:right;font-family:'IBM Plex Mono',monospace}
+.vc-tags{display:flex;flex-wrap:wrap;gap:5px;margin-top:10px}
+.tag{padding:2px 8px;border-radius:4px;font-size:11px;font-weight:500}
+.tag-strength{background:var(--success-l);color:var(--success)}
+.tag-concern{background:var(--warn-l);color:var(--warn)}
+.tag-missing{background:var(--danger-l);color:var(--danger)}
+
+.comp-table{width:100%;border-collapse:collapse;font-size:12.5px}
+.comp-table th{background:var(--surface2);padding:9px 12px;text-align:left;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--text2);border-bottom:1px solid var(--border);border-right:1px solid var(--border)}
+.comp-table th:last-child{border-right:none}
+.comp-table td{padding:8px 12px;border-bottom:1px solid var(--border);border-right:1px solid var(--border);vertical-align:top;font-size:12px}
+.comp-table td:last-child{border-right:none}
+.comp-table td.label-col{color:var(--text2);font-weight:500;font-size:12px}
+.comp-table td.best{color:var(--success);font-weight:600}
+.comp-table tr:hover td{background:var(--surface2)}
+
+.anomalies-list{list-style:none}
+.anomalies-list li{padding:8px 12px;background:var(--warn-l);border:1px solid var(--warn-bd);border-radius:6px;font-size:12.5px;color:var(--text);margin-bottom:6px;display:flex;gap:8px}
+.anomalies-list li::before{content:"⚠️";flex-shrink:0}
+
+.export-row{display:flex;gap:8px;flex-wrap:wrap}
+
+/* -- STATUS SUMMARY -- */
+.status-summary{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:14px;margin-bottom:14px}
+.status-summary-title{font-size:11px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px}
+.status-row{display:flex;align-items:center;justify-content:space-between;font-size:13px;padding:4px 0}
+.setup-note{padding:10px 14px;border-radius:6px;font-size:12px;margin-bottom:14px;line-height:1.5}
+
+</style>
+</head>
+<body>
+
+<!-- ERROR BANNER -->
+<div class="err-banner" id="err-banner">
+  <span>❌</span>
+  <span id="err-text"></span>
+</div>
+
+<!-- TOP BAR -->
+<div class="topbar">
+  <div class="brand">
+    <div class="brand-mark">⚡</div>
+    MMC Commercial Bid Analysis
+  </div>
+  <div class="topbar-right">
+    <div class="chip idle" id="chip-ocr">
+      <span class="dot"></span><span id="chip-ocr-text">OCR: Not set</span>
+    </div>
+    <div class="chip idle" id="chip-api">
+      <span class="dot"></span><span id="chip-api-text">API: Not set</span>
+    </div>
+    <button class="settings-btn" onclick="goPanel(0)">⚙ Settings</button>
+    <span style="font-size:10px;color:var(--text3);font-family:'IBM Plex Mono',monospace;padding:3px 7px;background:var(--surface2);border:1px solid var(--border);border-radius:4px" title="Build 20260609_0800">v2.8</span>
+  </div>
+</div>
+
+<!-- STEPS -->
+<div class="steps-wrap" id="steps-wrap" style="display:none">
+  <div class="steps">
+    <div class="step active" id="s1"><div class="step-circle">1</div><span>Upload files</span></div>
+    <div class="step" id="s2"><div class="step-circle">2</div><span>Review</span></div>
+    <div class="step" id="s3"><div class="step-circle">3</div><span>Analysing</span></div>
+    <div class="step" id="s4"><div class="step-circle">4</div><span>Results</span></div>
+  </div>
+</div>
+
+<!-- == PANEL 0: SETUP == -->
+<div class="panel active" id="panel-0">
+  <div style="max-width:560px;margin:0 auto;padding-top:16px">
+
+    <div style="text-align:center;margin-bottom:32px">
+      <div style="font-size:36px;margin-bottom:10px">⚡</div>
+      <div style="font-size:20px;font-weight:700;margin-bottom:6px">MMC Bid Analysis - Setup</div>
+      <div style="font-size:13px;color:var(--text2)">Configure both services below and test the connections before starting your analysis.</div>
+    </div>
+
+    <!-- OCR CARD -->
+    <div class="card" id="setup-ocr-card">
+      <div class="card-title">
+        <span class="icon">🔍</span>
+        Azure Document Intelligence - OCR
+        <span id="ocr-tick" style="margin-left:auto;font-size:18px;display:none">✅</span>
+      </div>
+      <div style="font-size:12px;color:var(--text2);margin-bottom:16px;line-height:1.6">
+        Required to read <strong>scanned PDFs</strong>. Converts images of text into extractable content.<br>
+        <span style="color:var(--text3)">📍 Azure Portal → Document Intelligence → Keys and Endpoint</span>
+      </div>
+
+      <div class="field">
+        <label>Endpoint URL</label>
+        <input type="text" id="s-adi-ep" placeholder="https://your-resource.cognitiveservices.azure.com/" autocomplete="off">
+      </div>
+      <div class="field">
+        <label>API Key (KEY 1)</label>
+        <input type="password" id="s-adi-key" placeholder="Paste KEY 1 from Azure Portal" autocomplete="off">
+      </div>
+
+      <div style="display:flex;gap:10px;align-items:center">
+        <button class="btn btn-primary" id="btn-test-ocr" onclick="testOCR()" style="background:var(--purple)">🔌 Test OCR Connection</button>
+        <span style="font-size:12px;color:var(--text2)" id="ocr-test-hint">← Click after entering credentials</span>
+      </div>
+      <div class="istat" id="s-ocr-status"></div>
+    </div>
+
+    <!-- DEEPSEEK CARD -->
+    <div class="card" id="setup-api-card">
+      <div class="card-title">
+        <span class="icon">🤖</span>
+        AI Analysis - DeepSeek / Anthropic
+        <span id="api-tick" style="margin-left:auto;font-size:18px;display:none">✅</span>
+      </div>
+      <div style="font-size:12px;color:var(--text2);margin-bottom:16px;line-height:1.6">
+        Powers the bid comparison and recommendation engine.<br>
+        <span style="color:var(--text3)">📍 DeepSeek: platform.deepseek.com → API Keys &nbsp;|&nbsp; Anthropic: console.anthropic.com</span>
+      </div>
+
+      <div class="field">
+        <label>AI Provider</label>
+        <select id="s-provider" onchange="onProviderChange()" style="width:100%;padding:9px 13px;background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:'IBM Plex Sans',sans-serif;font-size:13px;outline:none">
+          <option value="anthropic">Anthropic Claude (native PDF vision - reads scanned docs)</option>
+          <option value="deepseek">DeepSeek (low cost - requires OCR for scanned PDFs)</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>API Key</label>
+        <input type="password" id="s-api-key" placeholder="sk-..." autocomplete="off" oninput="onApiKeyInput(this.value)">
+        <div style="font-size:11px;color:var(--text3);margin-top:4px" id="s-api-hint">console.anthropic.com → Settings → API Keys</div>
+      </div>
+
+      <div style="display:flex;gap:10px;align-items:center">
+        <button class="btn btn-primary" id="btn-test-api" onclick="testAPI()" style="background:var(--teal)">🔌 Test API Connection</button>
+        <span style="font-size:12px;color:var(--text2)" id="api-test-hint">← Click after entering your key</span>
+      </div>
+      <div class="istat" id="s-api-status"></div>
+    </div>
+
+    <!-- STATUS SUMMARY -->
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:18px;margin-bottom:20px">
+      <div style="font-size:12px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.06em;margin-bottom:12px">Connection Status</div>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <div style="display:flex;align-items:center;justify-content:space-between;font-size:13px">
+          <span>🔍 Azure Document Intelligence (OCR)</span>
+          <span id="status-ocr-label" style="font-size:12px;color:var(--text3)">Not tested</span>
+        </div>
+        <div style="display:flex;align-items:center;justify-content:space-between;font-size:13px">
+          <span>🤖 AI Provider (DeepSeek / Anthropic)</span>
+          <span id="status-api-label" style="font-size:12px;color:var(--text3)">Not tested</span>
+        </div>
+      </div>
+      <div style="margin-top:14px;padding:10px 14px;border-radius:8px;font-size:12px;background:rgba(74,124,247,.06);border:1px solid rgba(74,124,247,.15);color:var(--text2)" id="setup-note">
+        💡 <strong>OCR is required for scanned PDFs.</strong> If all your files are text-based PDFs (Tariq Electric style), OCR is optional - but recommended for scanned documents like Ravi Switch Gear.
+      </div>
+    </div>
+
+    <button class="btn btn-primary btn-full" id="btn-start-analysis" onclick="saveAndStart()">
+      🚀 Save & Start Bid Analysis →
+    </button>
+
+    <div style="margin-top:10px">
+      <button class="btn btn-ghost btn-full" id="btn-selftest" onclick="runSelfTest()" style="font-size:12px">
+        🧪 Run Connection & JSON Test (verify before demo)
+      </button>
+    </div>
+    <div class="istat" id="selftest-result" style="margin-top:10px"></div>
+
+    <div style="text-align:center;margin-top:12px;font-size:11px;color:var(--text3)">
+      Both connections will be saved in your browser. You won't need to re-enter them next time.
+    </div>
+
+  </div>
+</div>
+
+<!-- == PANEL 1: UPLOAD == -->
+<div class="panel" id="panel-1">
+
+  <div class="card">
+    <div class="card-title"><span class="icon">📂</span> Upload Bid Documents</div>
+    <div class="drop-zone" id="drop-zone">
+      <input type="file" id="file-input" multiple accept=".pdf,.png,.jpg,.jpeg,.tiff">
+      <div class="dz-icon">📄</div>
+      <div class="dz-text"><strong>Click to browse</strong> or drag & drop<br>PDF files and scanned images (PNG, JPG, TIFF) - RFQ + all vendor quotes at once</div>
+    </div>
+    <div class="file-list" id="file-list"></div>
+  </div>
+
+  <div class="card">
+    <div class="card-title"><span class="icon">⚙</span> Project Details</div>
+    <div class="row-2">
+      <div class="field">
+        <label>Project / Tender Name</label>
+        <input type="text" id="project-name" placeholder="e.g. BYD Gharo EV Assembly - LV Panels">
+      </div>
+      <div class="field">
+        <label>Reporting Currency</label>
+        <select id="currency">
+          <option value="PKR">PKR - Pakistani Rupee</option>
+          <option value="USD">USD - US Dollar</option>
+          <option value="EUR">EUR - Euro</option>
+          <option value="CNY">CNY - Chinese Yuan</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <div id="p1-status" class="istat"></div>
+
+  <div style="display:flex;gap:10px;align-items:center;margin-bottom:12px">
+    <button class="btn btn-ghost" onclick="goPanel(0)" style="font-size:12px;padding:8px 14px">⚙ Change Settings</button>
+    <span style="font-size:11px;color:var(--text3)">OCR: <span id="p1-ocr-label" style="color:var(--text2)">-</span> &nbsp;|&nbsp; API: <span id="p1-api-label" style="color:var(--text2)">-</span></span>
+  </div>
+
+  <button class="btn btn-primary btn-full" id="btn-analyse" onclick="startAnalysis()" disabled>
+    🔍 Classify & Review Files →
+  </button>
+</div>
+
+<!-- == PANEL 2: REVIEW == -->
+<div class="panel" id="panel-2">
+  <div class="card">
+    <div class="card-title"><span class="icon">🗂</span> Review File Classification</div>
+    <p style="font-size:13px;color:var(--text2);margin-bottom:16px">AI identified these files. Correct any misclassifications, then continue.</p>
+    <table class="rev-table">
+      <thead><tr><th>File</th><th>Size</th><th>Role</th><th>OCR Status</th></tr></thead>
+      <tbody id="review-tbody"></tbody>
+    </table>
+  </div>
+  <div style="display:flex;gap:10px">
+    <button class="btn btn-ghost" onclick="goPanel(1)">← Back</button>
+    <button class="btn btn-teal btn-full" onclick="runFullAnalysis()">Continue & Analyse →</button>
+  </div>
+</div>
+
+<!-- == PANEL 3: ANALYSING == -->
+<div class="panel" id="panel-3">
+  <div class="card">
+    <div class="card-title"><span class="icon">⚙</span> Analysing Bids...</div>
+    <div class="analysis-steps" id="asteps">
+      <div class="astep" id="as1">
+        <div class="astep-icon">🔍</div>
+        <div class="astep-body">
+          <div class="astep-title">OCR Processing</div>
+          <div class="astep-desc" id="as1-desc">Scanning PDFs for scanned content...</div>
+        </div>
+      </div>
+      <div class="astep" id="as2">
+        <div class="astep-icon">🤖</div>
+        <div class="astep-body">
+          <div class="astep-title">AI Analysis</div>
+          <div class="astep-desc" id="as2-desc">Waiting...</div>
+        </div>
+      </div>
+      <div class="astep" id="as3">
+        <div class="astep-icon">📊</div>
+        <div class="astep-body">
+          <div class="astep-title">Building Results</div>
+          <div class="astep-desc" id="as3-desc">Waiting...</div>
+        </div>
+      </div>
+    </div>
+    <div class="prog-wrap v" style="margin-top:20px">
+      <div class="prog-lbl" id="main-prog-lbl">Initialising...</div>
+      <div class="prog-track"><div class="prog-fill" id="main-prog-bar"></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- == PANEL 4: RESULTS == -->
+<div class="panel" id="panel-4">
+  <div id="downlaod-panel">
+  <div class="exec-summary" id="exec-summary-card"></div>
+  <div class="rec-card" id="rec-card"></div>
+  <div class="results-grid" id="vendor-cards"></div>
+
+  <div class="card">
+    <div class="card-title"><span class="icon">📋</span> Comparison Table</div>
+    <div style="overflow-x:auto"><table class="comp-table" id="comp-table"></table></div>
+  </div>
+
+  <div class="card" id="anomalies-card" style="display:none">
+    <div class="card-title"><span class="icon">⚠️</span> Anomalies & Flags</div>
+    <ul class="anomalies-list" id="anomalies-list"></ul>
+  </div>
+  </div>
+  <div class="card">
+    <div class="card-title"><span class="icon">📤</span> Export</div>
+    <div class="export-row">
+      <button class="btn btn-ghost" onclick="window.print()">🖨 Print</button>
+      <button class="btn btn-ghost" onclick="downloadPDF()">📄 Download PDF</button>
+      <button class="btn btn-ghost" onclick="copyJSON()">📋 Copy JSON</button>
+      <button class="btn btn-ghost" onclick="startOver()">🔄 New Analysis</button>
+      <button class="btn btn-ghost" onclick="sendEmail()">📧 Send to Email</button>
+      
+    </div>
+  </div>
+</div>
+
+<script>
+const BACKEND_URL = 'https://mmc-cdhncsgudefcf0hr.eastasia-01.azurewebsites.net';
+const APP_VERSION = "v2.8";
+const APP_BUILD   = "20260609_0800";
+const APP_CHANGES = [
+  "v2.6: temperature:0 on all API calls — consistent results every run",
+  "localStorage safe wrappers — Edge Tracking Prevention compatible",
+  "merge max_tokens raised to 6000 to prevent truncation",
+  "Self-test button — verifies API + JSON pipeline before demo",
+  "Correct Claude model name:claude-sonnet-4-6",
+  "PDF chunking: 20 pages/batch, renders to JPEG before sending",
+  "Portal-aligned theme: IBM Plex Sans, #1a56db, #f4f3f0"
+];
+console.log(`%cMMC Bid Analysis ${APP_VERSION} (build ${APP_BUILD})`,
+  "color:#1a56db;font-weight:bold;font-size:14px");
+console.log("Changes:", APP_CHANGES.join(" | "));
+
+// ================================================
+let FILES = [];   // {name,size,base64,text,role,ocrDone}
+let RESULT = null;
+let ADI_EP  = lsGet("adi_ep");
+let ADI_KEY = lsGet("adi_key");
+let API_KEY = lsGet("api_key");
+let PROVIDER= lsGet("provider","anthropic");
+
+// ================================================
+//  INIT
+// ================================================
+window.onload = () => {
+  // Restore saved credentials into form fields
+  document.getElementById("s-adi-ep").value   = ADI_EP;
+  document.getElementById("s-adi-key").value  = ADI_KEY;
+  document.getElementById("s-provider").value = PROVIDER;
+  onProviderChange();
+
+  // Restore API key AND trigger validation so button enables correctly
+  const apiKeyEl = document.getElementById("s-api-key");
+  if(apiKeyEl) {
+    apiKeyEl.value = API_KEY;
+    if(API_KEY) onApiKeyInput(API_KEY); // manually trigger since JS set doesn't fire oninput
+  }
+
+  updateChips();
+  if(ADI_EP && ADI_KEY) updateSetupStatus("ocr", true, "Saved ✓");
+  if(API_KEY)           updateSetupStatus("api", true, "Saved ✓");
+  checkSetupComplete();
+
+  // If API key already saved, go straight to Upload
+  if(API_KEY) goPanel(1);
+  else        goPanel(0);
+};
+
+// ================================================
+//  CHIPS & STATUS
+// ================================================
+function updateChips() {
+  setChip("chip-ocr", ADI_EP && ADI_KEY ? "ok":"idle",
+    ADI_EP && ADI_KEY ? "OCR: Ready ✓":"OCR: Not set");
+  setChip("chip-api", API_KEY ? "ok":"idle",
+    API_KEY ? (PROVIDER==="deepseek"?"DeepSeek ✓":"Claude ✓"):"API: Not set");
+}
+function setChip(id, state, txt) {
+  const el = document.getElementById(id);
+  el.className = "chip " + state;
+  el.innerHTML = `<span class="dot"></span><span>${txt}</span>`;
+}
+function showIstat(id, state, msg) {
+  const el = document.getElementById(id);
+  el.className = "istat v " + state;
+  el.textContent = msg;
+}
+function setStep(n, state) {
+  for(let i=1;i<=4;i++){
+    const el = document.getElementById("s"+i);
+    el.className = "step" + (i==n?" "+state:i<n?" done":"");
+  }
+}
+function setAStep(id, state, desc) {
+  const el = document.getElementById(id);
+  el.className = "astep " + state;
+  if(desc) document.getElementById(id+"-desc").textContent = desc;
+}
+function setProgress(pct, lbl) {
+  document.getElementById("main-prog-bar").style.width = pct + "%";
+  document.getElementById("main-prog-lbl").textContent = lbl;
+}
+function showErr(msg) {
+  goPanel(1);
+  const b = document.getElementById("err-banner");
+  document.getElementById("err-text").textContent = msg;
+  b.style.display = "flex";
+  console.error("Analysis error:", msg);
+}
+function hideErr() {
+  document.getElementById("err-banner").style.display = "none";
+}
+
+// ================================================
+//  SETTINGS MODAL
+// ================================================
+// -- Setup status helpers --
+let ocrVerified = false;
+let apiVerified = false;
+
+function updateSetupStatus(which, ok, msg) {
+  const label = document.getElementById("status-"+which+"-label");
+  const tick  = document.getElementById(which+"-tick");
+  const hint  = document.getElementById(which+"-test-hint");
+  if(ok) {
+    label.textContent = "✅ Connected";
+    label.style.color = "var(--teal)";
+    if(tick) tick.style.display = "inline";
+    if(hint) { hint.textContent = msg||"Connected ✓"; hint.style.color = "var(--teal)"; }
+    if(which==="ocr") ocrVerified = true;
+    if(which==="api") apiVerified = true;
+  } else {
+    label.textContent = "❌ " + (msg||"Failed");
+    label.style.color = "var(--red)";
+    if(tick) tick.style.display = "none";
+    if(hint) { hint.textContent = msg||"Failed"; hint.style.color = "var(--red)"; }
+    if(which==="ocr") ocrVerified = false;
+    if(which==="api") apiVerified = false;
+  }
+  checkSetupComplete();
+}
+
+function checkSetupComplete() {
+  // Read current key from input (not just saved variable)
+  const keyInput = document.getElementById("s-api-key");
+  const currentKey = keyInput ? keyInput.value.trim() : API_KEY;
+  const hasKey = currentKey.length > 10;
+
+  const btn = document.getElementById("btn-start-analysis");
+  if(btn) btn.disabled = !hasKey;
+
+  // Update the note panel
+  const note = document.getElementById("setup-note");
+  if(!note) return;
+  if(hasKey && ocrVerified) {
+    note.style.cssText = "margin-top:14px;padding:10px 14px;border-radius:8px;font-size:12px;background:rgba(14,168,122,.06);border:1px solid rgba(14,168,122,.2);color:var(--teal)";
+    note.innerHTML = "✅ <strong>Both services ready.</strong> You can analyse bids including scanned PDFs.";
+  } else if(hasKey) {
+    note.style.cssText = "margin-top:14px;padding:10px 14px;border-radius:8px;font-size:12px;background:rgba(245,158,11,.06);border:1px solid rgba(245,158,11,.2);color:var(--amber)";
+    note.innerHTML = "⚡ <strong>AI key entered.</strong> OCR not configured - text-based PDFs will work. Scanned PDFs need Azure DI.";
+  } else {
+    note.style.cssText = "margin-top:14px;padding:10px 14px;border-radius:8px;font-size:12px;background:rgba(74,124,247,.06);border:1px solid rgba(74,124,247,.15);color:var(--text2)";
+    note.innerHTML = "💡 Enter your AI API key above to get started. OCR is optional - only needed for scanned PDFs.";
+  }
+}
+
+async function testOCR() {
+  const ep  = document.getElementById("s-adi-ep").value.trim();
+  const key = document.getElementById("s-adi-key").value.trim();
+  if(!ep || !key) {
+    showIstat("s-ocr-status","err","⚠️ Enter both endpoint URL and API key first.");
+    return;
+  }
+  setChip("chip-ocr","busy","OCR: Testing...");
+  showIstat("s-ocr-status","info","⏳ Connecting to Azure Document Intelligence...");
+  document.getElementById("btn-test-ocr").disabled = true;
+  try {
+    const url = ep.replace(/\/$/,"")+"/documentintelligence/documentModels?api-version=2024-02-29-preview";
+    const r = await fetch(url,{headers:{"Ocp-Apim-Subscription-Key":key}});
+    if(r.ok){
+      const d = await r.json();
+      const n = d.value?.length||"?";
+      lsSet("adi_ep", ep);
+      lsSet("adi_key", key);
+      ADI_EP = ep; ADI_KEY = key;
+      setChip("chip-ocr","ok","OCR: Connected ✓");
+      showIstat("s-ocr-status","ok",`✅ Connected! ${n} models available - prebuilt-read, prebuilt-layout and more. Azure DI is ready for OCR.`);
+      updateSetupStatus("ocr", true, `${n} models available`);
+    } else if(r.status===401){
+      setChip("chip-ocr","err","OCR: Auth Failed");
+      showIstat("s-ocr-status","err","❌ 401 Unauthorized - Wrong API key. Go to Azure Portal → your Document Intelligence resource → Keys and Endpoint → copy KEY 1.");
+      updateSetupStatus("ocr", false, "401 - Wrong key");
+    } else if(r.status===404){
+      setChip("chip-ocr","err","OCR: Bad URL");
+      showIstat("s-ocr-status","err","❌ 404 Not Found - Endpoint URL is wrong. It must look like: https://your-name.cognitiveservices.azure.com/");
+      updateSetupStatus("ocr", false, "404 - Bad URL");
+    } else {
+      setChip("chip-ocr","err","OCR: Error "+r.status);
+      showIstat("s-ocr-status","err","❌ HTTP "+r.status+" - unexpected error. Double-check the endpoint URL.");
+      updateSetupStatus("ocr", false, "HTTP "+r.status);
+    }
+  } catch(e){
+    setChip("chip-ocr","err","OCR: Unreachable");
+    showIstat("s-ocr-status","err","❌ Network error: "+e.message);
+    updateSetupStatus("ocr", false, "Network error");
+  }
+  document.getElementById("btn-test-ocr").disabled = false;
+}
+
+async function testAPI() {
+  const key  = document.getElementById("s-api-key").value.trim();
+  const prov = document.getElementById("s-provider").value;
+  if(!key){
+    showIstat("s-api-status","err","⚠️ Enter your API key first.");
+    return;
+  }
+  setChip("chip-api","busy","API: Testing...");
+  showIstat("s-api-status","info","⏳ Connecting to "+(prov==="deepseek"?"DeepSeek":"Anthropic")+"...");
+  document.getElementById("btn-test-api").disabled = true;
+  try {
+    let r;
+    if(prov==="deepseek"){
+      r = await fetch("https://api.deepseek.com/chat/completions",{method:"POST",
+        headers:{"Content-Type":"application/json","Authorization":"Bearer "+key},
+        body:JSON.stringify({model:"deepseek-chat",max_tokens:5,messages:[{role:"user",content:"Hi"}]})});
+    } else {
+      r = await fetch("https://api.anthropic.com/v1/messages",{method:"POST",
+        headers:{"Content-Type":"application/json","x-api-key":key,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},
+        body:JSON.stringify({model:"claude-haiku-4-5-20251001",max_tokens:5,messages:[{role:"user",content:[{type:"text",text:"Hi"}]}]})});
+    }
+    if(r.ok){
+      const provLabel = prov==="deepseek"?"DeepSeek":"Anthropic Claude";
+      setChip("chip-api","ok",provLabel+" ✓");
+      showIstat("s-api-status","ok","✅ "+provLabel+" connected! Key is valid and working. Ready for bid analysis.");
+      updateSetupStatus("api", true, provLabel+" key valid");
+    } else if(r.status===401){
+      setChip("chip-api","err","API: Auth Failed");
+      const where = prov==="deepseek"?"platform.deepseek.com → API Keys":"console.anthropic.com → Settings → API Keys";
+      showIstat("s-api-status","err","❌ 401 Unauthorized - Invalid API key. Get a valid key from "+where);
+      updateSetupStatus("api", false, "401 - Invalid key");
+    } else if(r.status===402){
+      setChip("chip-api","err","API: No Balance");
+      showIstat("s-api-status","err","❌ 402 Payment Required - Insufficient balance. Top up your account at "+(prov==="deepseek"?"platform.deepseek.com":"console.anthropic.com"));
+      updateSetupStatus("api", false, "No balance");
+    } else {
+      const e = await r.json().catch(()=>({}));
+      setChip("chip-api","err","API: Error "+r.status);
+      showIstat("s-api-status","err","❌ HTTP "+r.status+": "+(e.error?.message||"Unexpected error"));
+      updateSetupStatus("api", false, "HTTP "+r.status);
+    }
+  } catch(e){
+    setChip("chip-api","err","API: Unreachable");
+    showIstat("s-api-status","err","❌ Network error: "+e.message);
+    updateSetupStatus("api", false, "Network error");
+  }
+  document.getElementById("btn-test-api").disabled = false;
+}
+
+function onProviderChange() {
+  const sel = document.getElementById("s-provider");
+  if(!sel) return;
+  const p = sel.value;
+  const hint  = document.getElementById("s-api-hint");
+  const input = document.getElementById("s-api-key");
+  if(p === "deepseek") {
+    if(hint)  hint.textContent  = "platform.deepseek.com → API Keys";
+    if(input) input.placeholder = "sk-...";
+  } else {
+    if(hint)  hint.textContent  = "console.anthropic.com → Settings → API Keys";
+    if(input) input.placeholder = "sk-ant-api03-...";
+  }
+  // Reset verified state when provider changes
+  apiVerified = false;
+  const statusLbl = document.getElementById("status-api-label");
+  if(statusLbl){ statusLbl.textContent = "Not tested"; statusLbl.style.color = "var(--text3)"; }
+  const tick = document.getElementById("api-tick");
+  if(tick) tick.style.display = "none";
+  checkSetupComplete();
+}
+
+function onApiKeyInput(val) {
+  const prov = document.getElementById("s-provider")?.value || PROVIDER;
+  const hint = document.getElementById("s-api-hint");
+  const key  = val.trim();
+
+  // Show format warning if key looks wrong for selected provider
+  if(key.length > 5) {
+    if(prov === "anthropic" && !key.startsWith("sk-ant-")) {
+      if(hint){ hint.textContent = "⚠ Anthropic keys start with sk-ant-... - check you selected the right provider"; hint.style.color = "var(--amber)"; }
+    } else if(prov === "deepseek" && !key.startsWith("sk-")) {
+      if(hint){ hint.textContent = "⚠ DeepSeek keys start with sk-... - check your key"; hint.style.color = "var(--amber)"; }
+    } else {
+      if(hint){ hint.textContent = prov==="anthropic" ? "✓ Key format looks correct" : "✓ Key format looks correct"; hint.style.color = "var(--teal)"; }
+    }
+  }
+  checkSetupComplete();
+}
+
+function saveAndStart() {
+  ADI_EP   = document.getElementById("s-adi-ep").value.trim();
+  ADI_KEY  = document.getElementById("s-adi-key").value.trim();
+  API_KEY  = document.getElementById("s-api-key").value.trim();
+  PROVIDER = document.getElementById("s-provider").value;
+
+  if(!API_KEY || API_KEY.length < 10) {
+    showIstat("s-api-status","err","⚠️ Please enter a valid API key before proceeding.");
+    document.getElementById("s-api-key").focus();
+    return;
+  }
+
+  // Save to localStorage
+  if(ADI_EP)  lsSet("adi_ep",  ADI_EP);
+  if(ADI_KEY) lsSet("adi_key", ADI_KEY);
+  lsSet("api_key",  API_KEY);
+  lsSet("provider", PROVIDER);
+
+  updateChips();
+  const ocrLbl = document.getElementById("p1-ocr-label");
+  const apiLbl = document.getElementById("p1-api-label");
+  if(ocrLbl){ ocrLbl.textContent=(ADI_EP&&ADI_KEY)?"✅ OCR Ready":"⚠ OCR not set"; ocrLbl.style.color=(ADI_EP&&ADI_KEY)?"var(--success)":"var(--warn)";}
+  if(apiLbl){ apiLbl.textContent="✅ "+(PROVIDER==="deepseek"?"DeepSeek":"Anthropic Claude"); apiLbl.style.color="var(--success)";}
+  goPanel(1);
+}
+
+// ================================================
+//  PANEL NAVIGATION
+// ================================================
+function goPanel(n) {
+  document.querySelectorAll(".panel").forEach(p=>p.classList.remove("active"));
+  document.getElementById("panel-"+n).classList.add("active");
+  hideErr();
+  // Show steps bar only for panels 1-4
+  document.getElementById("steps-wrap").style.display = n===0 ? "none" : "block";
+  if(n>=1) setStep(n,"active");
+}
+
+// ================================================
+//  FILE HANDLING
+// ================================================
+const dz = document.getElementById("drop-zone");
+dz.addEventListener("dragover",e=>{e.preventDefault();dz.classList.add("over");});
+dz.addEventListener("dragleave",()=>dz.classList.remove("over"));
+dz.addEventListener("drop",e=>{e.preventDefault();dz.classList.remove("over");onFiles(e.dataTransfer.files);});
+document.getElementById("file-input").onchange = function(){onFiles(this.files);};
+
+async function onFiles(list) {
+  if(!list||!list.length) return;
+  for(const f of list){
+    const b64 = await readB64(f);
+    FILES.push({name:f.name,size:f.size,base64:b64,text:"",role:guessRole(f.name),ocrDone:false});
+  }
+  renderFileList();
+  document.getElementById("btn-analyse").disabled = FILES.length===0;
+}
+
+function guessRole(name) {
+  const n = name.toLowerCase();
+  if(n.includes("rfq")||n.includes("tender")||n.includes("enquiry")||n.includes("requirement")) return "rfq";
+  return "vendor";
+}
+
+function renderFileList() {
+  const el = document.getElementById("file-list");
+  if(!FILES.length){el.innerHTML="";return;}
+  el.innerHTML = FILES.map((f,i)=>`
+    <div class="file-row">
+      <span class="fi">📄</span>
+      <span class="fn">${f.name}</span>
+      <span class="fs">${(f.size/1024).toFixed(0)} KB</span>
+      <select onchange="FILES[${i}].role=this.value">
+        <option value="rfq"${f.role==="rfq"?" selected":""}>RFQ / Tender</option>
+        <option value="vendor"${f.role==="vendor"?" selected":""}>Vendor Quote</option>
+      </select>
+      <button class="rm" onclick="removeFile(${i})">×</button>
+    </div>`).join("");
+}
+
+function removeFile(i){FILES.splice(i,1);renderFileList();document.getElementById("btn-analyse").disabled=FILES.length===0;}
+function readB64(f){return new Promise((res,rej)=>{const r=new FileReader();r.onload=e=>res(e.target.result.split(",")[1]);r.onerror=rej;r.readAsDataURL(f);});}
+
+// ================================================
+//  STEP 1 → STEP 2: CLASSIFY & SHOW REVIEW
+// ================================================
+async function startAnalysis() {
+  if(!FILES.length){ return; }
+  if(!API_KEY){
+    showIstat("p1-status","err","⚠️ No API key configured. Click ⚙ Settings to set up your connections.");
+    goPanel(0);
+    return;
+  }
+  hideErr();
+  document.getElementById("p1-status").className="istat";
+
+  // Build review table
+  const tbody = document.getElementById("review-tbody");
+  tbody.innerHTML = FILES.map((f,i)=>`
+    <tr>
+      <td style="font-family:'IBM Plex Mono',monospace;font-size:12px">${f.name}</td>
+      <td style="font-family:'IBM Plex Mono',monospace;font-size:12px">${(f.size/1024).toFixed(0)} KB</td>
+      <td>
+        <select onchange="FILES[${i}].role=this.value" style="padding:4px 8px;background:var(--surface2);border:1px solid var(--border2);border-radius:6px;color:var(--text);font-size:11px;outline:none">
+          <option value="rfq"${f.role==="rfq"?" selected":""}>📋 RFQ / Tender</option>
+          <option value="vendor"${f.role==="vendor"?" selected":""}>🏭 Vendor Quote</option>
+        </select>
+      </td>
+      <td><span style="font-size:11px;color:var(--text2)">${f.name.toLowerCase().endsWith(".pdf")?"PDF - OCR check on analyse":"Text file"}</span></td>
+    </tr>`).join("");
+
+  goPanel(2);
+}
+
+// ================================================
+//  STEP 2 → STEP 3 → STEP 4: FULL ANALYSIS
+// ================================================
+// ================================================
+//  SYSTEM PROMPT (shared by both providers)
+// ================================================
+function SYSTEM_PROMPT(projectName, currency) {
+  return `You are a senior PPRA-certified procurement analyst for Mega Motor Company (MMC), a BYD partner in Pakistan.
+Analyze the procurement documents and return ONLY a valid JSON object. No markdown, no backticks, no explanation.
+
+IMPORTANT for OCR/table data: pipe-separated rows like:
+"1.1.1 | 1T1-1AN1 | 1 | No. | 8499098 | 8499098 | 849910 | 9349007"
+are pricing table rows. Look for Total Amount / Grand Total rows for final prices.
+Pakistani number format: 1,49,182,830 = 149182830 (remove commas).
+This is for project: ${projectName}, currency: ${currency}.
+
+Return this exact JSON structure:
+{
+  "executiveSummary": "2-3 sentence summary",
+  "rfqScope": "what is being procured",
+  "vendors": [
+    {
+      "name": "company name",
+      "totalSupplyPKR": 0,
+      "totalInstallationPKR": 0,
+      "grandTotalExclGST": 0,
+      "grandTotalInclGST": 0,
+      "brand": "ABB / Siemens / Schneider / etc",
+      "panelType": "Form 4b / IEC 61439 / etc",
+      "deliveryWeeks": "e.g. 10-12 weeks",
+      "paymentTerms": "e.g. 50% advance",
+      "warranty": "e.g. 1 year",
+      "validityDays": "e.g. 15 working days",
+      "strengths": ["strength1"],
+      "concerns": ["concern1"],
+      "missingItems": ["item1"]
+    }
+  ],
+  "ranking": [{"rank": 1, "vendor": "name", "totalPKR": 0, "reason": "reason"}],
+  "recommendation": {
+    "winner": "vendor name",
+    "justification": "2-3 sentence PPRA justification",
+    "evaluationBasis": "lowest evaluated cost / best value"
+  },
+  "anomalies": ["anomaly1"],
+  "ppraNote": "PPRA compliance note"
+}
+Return ONLY the JSON. No other text.`;
+}
+
+// ================================================
+//  SHARED: parse AI response + render results
+// ================================================
+async function finishAnalysis(aiResult, currency, projectName) {
+  setAStep("as3","active","Building results dashboard...");
+  setProgress(90,"Rendering results...");
+  let parsed;
+  try {
+    // Step 1: strip markdown fences
+    let clean = aiResult
+      .replace(/^```json\s*/i,"").replace(/^```\s*/,"").replace(/```\s*$/,"").trim();
+
+    // Step 2: extract outermost JSON object (handles extra text before/after)
+    const objMatch = clean.match(/\{[\s\S]*\}/);
+    if(objMatch) clean = objMatch[0];
+
+    // Step 3: attempt direct parse
+    try {
+      parsed = JSON.parse(clean);
+    } catch(e1) {
+      // Step 4: aggressive repair — fix common Claude JSON issues
+      let repaired = clean
+        // Remove trailing commas before } or ]
+        .replace(/,\s*([}\]])/g, "$1")
+        // Fix unescaped newlines inside strings
+        .replace(/("(?:[^"\\]|\\.)*")/g, m => m.replace(/\n/g,"\\n").replace(/\r/g,"\\r"))
+        // Fix truncated arrays — close any open [ or {
+        ;
+      // Count unbalanced braces/brackets and close them
+      let opens = (repaired.match(/\{/g)||[]).length - (repaired.match(/\}/g)||[]).length;
+      let openArr = (repaired.match(/\[/g)||[]).length - (repaired.match(/\]/g)||[]).length;
+      // Remove trailing comma before we close
+      repaired = repaired.replace(/,\s*$/, "");
+      while(openArr-- > 0) repaired += "]";
+      while(opens-- > 0) repaired += "}";
+      try {
+        parsed = JSON.parse(repaired);
+      } catch(e2) {
+        // Step 5: last resort — build a minimal valid result from what we have
+        console.error("JSON repair failed:", e2.message, "\nRaw:", clean.slice(0,500));
+        throw new Error("AI returned malformed JSON. Raw response: " + aiResult.slice(0,200));
+      }
+    }
+  } catch(e) {
+    throw new Error(e.message);
+  }
+
+  // Ensure required structure exists
+  if(!parsed.vendors) parsed.vendors = [];
+  if(!parsed.ranking) parsed.ranking = [];
+  if(!parsed.recommendation) parsed.recommendation = {winner:"N/A",justification:"See vendor cards",evaluationBasis:"N/A"};
+  if(!parsed.anomalies) parsed.anomalies = [];
+
+  RESULT = parsed;
+  renderResults(parsed, currency, projectName);
+  setAStep("as3","done","✅ Results ready!");
+  setProgress(100,"Complete!");
+  setTimeout(()=>{ goPanel(4); setStep(4,"active"); }, 600);
+}
+
+// ================================================
+//  SELF-TEST — verify API + JSON pipeline before demo
+// ================================================
+async function runSelfTest() {
+  const key  = document.getElementById("s-api-key").value.trim() || API_KEY;
+  const prov = document.getElementById("s-provider")?.value || PROVIDER;
+  if(!key){ showIstat("selftest-result","err","⚠️ Enter your API key first, then run the test."); return; }
+
+  const btn = document.getElementById("btn-selftest");
+  btn.disabled = true;
+  btn.textContent = "⏳ Testing...";
+  showIstat("selftest-result","info","Running 4-step test...");
+
+  const steps = [];
+  let allPassed = true;
+
+  // ── STEP 1: API connection ──
+  try {
+    let r;
+    if(prov === "anthropic") {
+      r = await fetch("https://api.anthropic.com/v1/messages",{method:"POST",
+        headers:{"Content-Type":"application/json","x-api-key":key,
+          "anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},
+        body:JSON.stringify({model:"claude-sonnet-4-6",max_tokens:5,
+          system:"Reply OK",messages:[{role:"user",content:[{type:"text",text:"ping"}]}]})});
+    } else {
+      r = await fetch("https://api.deepseek.com/chat/completions",{method:"POST",
+        headers:{"Content-Type":"application/json","Authorization":"Bearer "+key},
+        body:JSON.stringify({model:"deepseek-chat",max_tokens:5,
+          messages:[{role:"user",content:"ping"}]})});
+    }
+    if(r.ok) steps.push("✅ Step 1: API connection — OK");
+    else { const e=await r.json().catch(()=>({})); steps.push(`❌ Step 1: API connection — ${r.status} ${e.error?.message||""}`); allPassed=false; }
+  } catch(e){ steps.push("❌ Step 1: API connection — "+e.message); allPassed=false; }
+
+  if(!allPassed){ showIstat("selftest-result","err",steps.join("<br>")); btn.disabled=false; btn.textContent="🧪 Run Connection & JSON Test (verify before demo)"; return; }
+
+  // ── STEP 2: Real merge call with mock chunk data ──
+  const mockChunks = [
+    {chunk:{fileName:"AIM_Engineering.pdf",startPage:1,endPage:20},
+     result:JSON.stringify({vendorName:"AIM Engineering",totals:{supply:149182830,installation:14918283,grandExclGST:149182830,grandInclGST:164101113},brand:"Schneider/Chint",paymentTerms:"50% advance",deliveryWeeks:"120 working days",warranty:"12 months",validityDays:"15 working days"})},
+    {chunk:{fileName:"Tariq_Electric.pdf",startPage:1,endPage:20},
+     result:JSON.stringify({vendorName:"Tariq Electric",totals:{supply:193258000,installation:0,grandExclGST:193258000,grandInclGST:227844940},brand:"ABB",paymentTerms:"30% advance",deliveryWeeks:"10-12 weeks",warranty:"18 months",validityDays:"30 days"})}
+  ];
+
+  const chunkSummary = mockChunks.map((cr,i)=>{
+    const preview = cr.result.slice(0,500).replace(/\n/g," ");
+    return `[Chunk ${i+1}] ${cr.chunk.fileName} pp${cr.chunk.startPage}-${cr.chunk.endPage}: ${preview}`;
+  }).join("\n\n");
+
+  const mergePrompt = `You are a procurement analyst. Merge these document chunk extractions into ONE final JSON.
+
+CHUNKS:
+${chunkSummary}
+
+PROJECT: BYD Gharo EV Assembly — LV Panels | CURRENCY: PKR
+VENDORS: AIM Engineering, Tariq Electric
+
+Rules: Use GRAND TOTAL from summary. Pakistani numbers: remove commas. Return ONLY JSON, no markdown.
+
+{"executiveSummary":"","rfqScope":"","vendors":[{"name":"","totalSupplyPKR":0,"totalInstallationPKR":0,"grandTotalExclGST":0,"grandTotalInclGST":0,"brand":"","panelType":"","deliveryWeeks":"","paymentTerms":"","warranty":"","validityDays":"","strengths":[],"concerns":[],"missingItems":[]}],"ranking":[{"rank":1,"vendor":"","totalPKR":0,"reason":""}],"recommendation":{"winner":"","justification":"","evaluationBasis":""},"anomalies":[],"ppraNote":""}`;
+
+  let rawResponse = "";
+  try {
+    if(prov === "anthropic") {
+      rawResponse = await callClaudeWithBlocks(
+        "Return ONLY valid JSON. No markdown. No explanation.",
+        [{type:"text",text:mergePrompt}], 6000
+      );
+    } else {
+      rawResponse = await callAI("Return ONLY valid JSON. No markdown.", mergePrompt);
+    }
+    steps.push(`✅ Step 2: Merge API call — OK (${rawResponse.length} chars returned)`);
+  } catch(e){ steps.push("❌ Step 2: Merge API call — "+e.message); allPassed=false; }
+
+  // ── STEP 3: JSON parsing + repair ──
+  let parsed = null;
+  try {
+    let clean = rawResponse.replace(/^```json\s*/i,"").replace(/^```\s*/,"").replace(/```\s*$/,"").trim();
+    const objMatch = clean.match(/\{[\s\S]*\}/);
+    if(objMatch) clean = objMatch[0];
+    try {
+      parsed = JSON.parse(clean);
+      steps.push("✅ Step 3: JSON parse — clean (no repair needed)");
+    } catch(e1) {
+      let repaired = clean.replace(/,\s*([}\]])/g,"$1").replace(/,\s*$/,"");
+      let opens=(repaired.match(/\{/g)||[]).length-(repaired.match(/\}/g)||[]).length;
+      let openArr=(repaired.match(/\[/g)||[]).length-(repaired.match(/\]/g)||[]).length;
+      while(openArr-->0) repaired+="]"; while(opens-->0) repaired+="}";
+      parsed = JSON.parse(repaired);
+      steps.push("✅ Step 3: JSON parse — repaired (trailing comma/bracket fixed)");
+    }
+  } catch(e){ steps.push("❌ Step 3: JSON parse — "+e.message); allPassed=false; }
+
+  // ── STEP 4: Validate structure ──
+  if(parsed) {
+    const hasVendors = Array.isArray(parsed.vendors) && parsed.vendors.length > 0;
+    const hasWinner  = parsed.recommendation?.winner?.length > 0;
+    const hasRanking = Array.isArray(parsed.ranking) && parsed.ranking.length > 0;
+    const vendor1    = parsed.vendors?.[0];
+    const hasPrice   = vendor1 && vendor1.grandTotalInclGST > 0;
+
+    if(hasVendors && hasWinner && hasRanking && hasPrice) {
+      steps.push(`✅ Step 4: Structure valid — ${parsed.vendors.length} vendors, winner: "${parsed.recommendation.winner}", top price: PKR ${vendor1.grandTotalInclGST?.toLocaleString()}`);
+    } else {
+      steps.push(`⚠️ Step 4: Structure issues — vendors:${hasVendors} winner:${hasWinner} price:${hasPrice}`);
+    }
+  }
+
+  const status = allPassed ? "ok" : "err";
+  const summary = allPassed
+    ? `<strong>✅ All tests passed — ready for management demo!</strong><br>${steps.join("<br>")}`
+    : `<strong>❌ Issues found — see below:</strong><br>${steps.join("<br>")}`;
+  showIstat("selftest-result", status, summary);
+  btn.disabled = false;
+  btn.textContent = "🧪 Run Connection & JSON Test (verify before demo)";
+}
+
+async function runFullAnalysis() {
+  if(!API_KEY){ showErr("No API key. Click ⚙ Settings."); return; }
+  goPanel(3);
+  setStep(3,"active");
+  const projectName = document.getElementById("project-name").value || "Procurement Evaluation";
+  const currency    = document.getElementById("currency").value || "PKR";
+  if(PROVIDER === "anthropic") {
+    await runWithClaude(projectName, currency);
+  } else {
+    await runWithDeepSeek(projectName, currency);
+  }
+}
+
+async function runWithClaude(projectName, currency) {
+  setAStep("as1","active","Preparing documents...");
+  setProgress(5,"Checking page counts...");
+
+  const PDF_PAGE_LIMIT = 95; // safe margin below Claude's 100-page limit
+
+  // ── Count pages and flag oversized docs ──
+  for(const f of FILES) {
+    f.pageCount = await countPDFPages(f.base64);
+    const flag = f.pageCount > PDF_PAGE_LIMIT ? ` ⚠️ LARGE (${f.pageCount} pages — will split)` : ` ✓ (${f.pageCount} pages)`;
+    setAStep("as1","active",`${f.name}${flag}`);
+  }
+
+  const rfqFiles    = FILES.filter(f => f.role === "rfq");
+  const vendorFiles = FILES.filter(f => f.role === "vendor");
+  const totalCalls  = rfqFiles.length + vendorFiles.length + 1;
+
+  setAStep("as1","done",
+    `✅ ${FILES.length} documents ready — ${rfqFiles.length} RFQ + ${vendorFiles.length} vendor quotes`);
+  setProgress(10,`Phase 1: Extracting ${totalCalls-1} documents sequentially...`);
+  setAStep("as2","active","Phase 1 of 2 — Extracting each document...");
+
+  // ── PHASE 1: Extract each document separately ──
+  const extractions = {}; // { fileName: extractedJSON }
+  let callsDone = 0;
+
+  // Process RFQ first
+  for(const f of rfqFiles) {
+    callsDone++;
+    const pct = 10 + Math.round((callsDone / (totalCalls-1)) * 60);
+    setProgress(pct, `(${callsDone}/${totalCalls-1}) Reading RFQ: ${f.name}...`);
+    setAStep("as2","active",`Reading RFQ: ${f.name} (${f.pageCount} pages)`);
+    extractions[f.name] = await extractSingleDocument(f, "rfq", projectName, currency, PDF_PAGE_LIMIT);
+    setAStep("as2","active",`✓ RFQ extracted: ${f.name}`);
+  }
+
+  // Process each vendor quote
+  for(const f of vendorFiles) {
+    callsDone++;
+    const pct = 10 + Math.round((callsDone / (totalCalls-1)) * 60);
+    setProgress(pct, `(${callsDone}/${totalCalls-1}) Reading vendor: ${f.name}...`);
+    setAStep("as2","active",`Reading vendor quote: ${f.name} (${f.pageCount} pages)`);
+    extractions[f.name] = await extractSingleDocument(f, "vendor", projectName, currency, PDF_PAGE_LIMIT);
+    setAStep("as2","active",`✓ Vendor extracted: ${f.name}`);
+  }
+
+  // ── PHASE 2: Compare all extractions (text only — no PDFs) ──
+  setProgress(75,"Phase 2 of 2 — Comparing vendor quotes...");
+  setAStep("as2","active","Phase 2 of 2 — Comparing all vendor quotes against RFQ...");
+
+  const rfqData     = rfqFiles.map(f => extractions[f.name]).filter(Boolean);
+  const vendorData  = vendorFiles.map(f => ({
+    fileName: f.name,
+    ...extractions[f.name]
+  })).filter(Boolean);
+
+  const comparePrompt = `You are a PPRA-certified procurement analyst for Mega Motor Company (MMC), BYD partner Pakistan.
+
+Compare these vendor quotes against the RFQ requirements and produce the final procurement analysis.
+
+RFQ / TENDER DATA:
+${JSON.stringify(rfqData, null, 2)}
+
+VENDOR EXTRACTIONS:
+${JSON.stringify(vendorData, null, 2)}
+
+RULES:
+- Use grandTotalInclGST as the definitive comparison price
+- Rank vendors by grandTotalInclGST ascending (lowest = rank 1)
+- Flag any vendor missing items from the RFQ BOQ
+- Justify recommendation using PPRA lowest evaluated cost principle
+- Never recalculate — use the extracted totals as-is
+
+Return ONLY this JSON, no markdown, no explanation:
+{"executiveSummary":"","rfqScope":"","vendors":[{"name":"","totalSupplyPKR":0,"totalInstallationPKR":0,"grandTotalExclGST":0,"grandTotalInclGST":0,"brand":"","panelType":"","deliveryWeeks":"","paymentTerms":"","warranty":"","validityDays":"","strengths":[],"concerns":[],"missingItems":[]}],"ranking":[{"rank":1,"vendor":"","totalPKR":0,"reason":""}],"recommendation":{"winner":"","justification":"","evaluationBasis":"lowest evaluated cost"},"anomalies":[],"ppraNote":""}`;
+
+  try {
+    const compareResult = await callClaudeWithBlocks(
+      "You are a procurement analyst. Compare vendor data and return ONLY valid JSON. No markdown, no explanation.",
+      [{type:"text", text:comparePrompt}],
+      8000
+    );
+    setProgress(88,"Parsing comparison results...");
+    setAStep("as2","done","✅ Analysis complete — all documents processed");
+    await finishAnalysis(compareResult, currency, projectName);
+  } catch(e) {
+    setAStep("as2","err","Compare failed: "+e.message);
+    showErr("Comparison failed: "+e.message);
+  }
+}
+
+// ── Extract a single document — handles oversized PDFs by splitting ──
+async function extractSingleDocument(f, role, projectName, currency, pageLimit) {
+  const ext = f.name.toLowerCase().split(".").pop();
+  const isSplitNeeded = f.pageCount > pageLimit;
+
+  // ── For oversized PDFs: split into parts using pdf.js ──
+  if(isSplitNeeded && ext === "pdf" && typeof pdfjsLib !== "undefined") {
+    return await extractLargeDocument(f, role, projectName, currency, pageLimit);
+  }
+
+  // ── Normal case: send entire document in one call ──
+  const prompt = role === "rfq"
+    ? `Extract the scope and requirements from this RFQ/tender document.
+Return ONLY JSON: {"scope":"","projectSite":"","boqItems":[{"itemNo":"","description":"","qty":0,"unit":""}],"technicalRequirements":[],"evaluationCriteria":[]}`
+    : `Extract ALL pricing and commercial data from this vendor quote.
+RULES: Copy numbers EXACTLY as printed. Find the SUMMARY or GRAND TOTAL table — that is the definitive price.
+Pakistani format: 1,64,101,113 → 164101113 (remove commas only). Never estimate or calculate.
+Return ONLY JSON: {"vendorName":"","grandTotalExclGST":0,"grandTotalInclGST":0,"totalSupply":0,"totalInstallation":0,"gstPercent":18,"brand":"","panelType":"","deliveryWeeks":"","paymentTerms":"","warranty":"","validityDays":"","lineItemCount":0,"strengths":[],"concerns":[]}`;
+
+  const contentBlocks = [{
+    type:"document",
+    source:{ type:"base64", media_type:"application/pdf", data:f.base64 },
+    title:`[${role.toUpperCase()}] ${f.name}`
+  }, {
+    type:"text",
+    text:`PROJECT: ${projectName} | CURRENCY: ${currency}\n\n${prompt}`
+  }];
+
+  try {
+    const result = await callClaudeWithBlocks(
+      "You are a data extraction tool. Copy numbers exactly as printed. Never estimate. Return ONLY valid JSON.",
+      contentBlocks, 4000
+    );
+    return JSON.parse(result.replace(/^```json\s*/i,"").replace(/```\s*$/,"").trim().match(/\{[\s\S]*\}/)?.[0] || result);
+  } catch(e) {
+    console.warn(`Extraction failed for ${f.name}:`, e.message);
+    return { vendorName: f.name, error: e.message, grandTotalInclGST:0 };
+  }
+}
+
+// ── Handle PDFs over the page limit by splitting into parts ──
+async function extractLargeDocument(f, role, projectName, currency, pageLimit) {
+  const binary = atob(f.base64);
+  const bytes  = new Uint8Array(binary.length);
+  for(let i=0;i<binary.length;i++) bytes[i]=binary.charCodeAt(i);
+  const pdfDoc = await pdfjsLib.getDocument({data:bytes}).promise;
+  const total  = pdfDoc.numPages;
+  const parts  = Math.ceil(total / pageLimit);
+
+  setAStep("as2","active",`${f.name}: ${total} pages → splitting into ${parts} parts...`);
+
+  // For a large PDF we render each part's pages to JPEG (only used for oversized docs)
+  const partResults = [];
+  for(let p=0; p<parts; p++) {
+    const startPage = p * pageLimit + 1;
+    const endPage   = Math.min(startPage + pageLimit - 1, total);
+    setAStep("as2","active",`${f.name}: rendering pages ${startPage}-${endPage}...`);
+
+    const imageBlocks = [];
+    for(let pg=startPage; pg<=endPage; pg++) {
+      const page     = await pdfDoc.getPage(pg);
+      const viewport = page.getViewport({scale:1.5});
+      const canvas   = document.createElement("canvas");
+      canvas.width   = Math.floor(viewport.width);
+      canvas.height  = Math.floor(viewport.height);
+      await page.render({canvasContext:canvas.getContext("2d"), viewport}).promise;
+      imageBlocks.push({
+        type:"image",
+        source:{type:"base64", media_type:"image/jpeg",
+          data: canvas.toDataURL("image/jpeg",0.82).split(",")[1]}
+      });
+    }
+
+    imageBlocks.push({type:"text",
+      text:`Pages ${startPage}-${endPage} of ${total} | Part ${p+1}/${parts}
+Document: [${role.toUpperCase()}] ${f.name}
+PROJECT: ${projectName} | CURRENCY: ${currency}
+
+Extract all pricing data visible. Copy numbers exactly. Return ONLY JSON:
+{"vendorName":"","pages":"${startPage}-${endPage}","grandTotalInclGST":0,"grandTotalExclGST":0,"totalSupply":0,"totalInstallation":0,"brand":"","paymentTerms":"","deliveryWeeks":"","warranty":"","validityDays":"","hasSummaryTable":false}`
+    });
+
+    try {
+      const r = await callClaudeWithBlocks(
+        "Extract data exactly as printed. Return ONLY valid JSON.",
+        imageBlocks, 3000
+      );
+      const parsed = JSON.parse(r.replace(/^```json\s*/i,"").replace(/```\s*$/,"").trim().match(/\{[\s\S]*\}/)?.[0]||r);
+      partResults.push(parsed);
+    } catch(e) {
+      partResults.push({error:e.message, pages:`${startPage}-${endPage}`});
+    }
+    if(p < parts-1) await new Promise(r=>setTimeout(r,1000));
+  }
+
+  // Merge parts: use summary table part if found, otherwise highest total
+  const summaryPart = partResults.find(p=>p.hasSummaryTable);
+  const best = summaryPart || partResults.reduce((a,b)=>
+    (b.grandTotalInclGST||0) > (a.grandTotalInclGST||0) ? b : a, partResults[0]);
+  return { ...best,
+    strengths: partResults.flatMap(p=>p.strengths||[]).filter((v,i,a)=>a.indexOf(v)===i),
+    concerns:  partResults.flatMap(p=>p.concerns||[]).filter((v,i,a)=>a.indexOf(v)===i)
+  };
+}
+
+// -- Count pages in a PDF --
+async function countPDFPages(base64) {
+  if(typeof pdfjsLib === "undefined") return 0;
+  try {
+    const binary = atob(base64);
+    const bytes  = new Uint8Array(binary.length);
+    for(let i=0;i<binary.length;i++) bytes[i]=binary.charCodeAt(i);
+    const pdf = await pdfjsLib.getDocument({data:bytes}).promise;
+    return pdf.numPages;
+  } catch(e) { return 0; }
+}
+
+// ================================================
+//  PATH 2: DEEPSEEK - OCR first, then text
+// ================================================
+async function runWithDeepSeek(projectName, currency) {
+  setAStep("as1","active","Checking files for scanned content...");
+  setProgress(5,"Starting OCR pipeline...");
+
+  let ocrCount = 0;
+  for(let i=0;i<FILES.length;i++){
+    const f = FILES[i];
+    const ext = f.name.toLowerCase().split(".").pop();
+    const isPDF   = ext==="pdf";
+    const isImage = ["png","jpg","jpeg","tiff","bmp"].includes(ext);
+    if(!isPDF && !isImage) continue;
+    setProgress(5+(i/FILES.length)*25, `(${i+1}/${FILES.length}) ${f.name}...`);
+    setAStep("as1","active",`Processing: ${f.name}`);
+    if(isPDF){
+      const pdfText = await extractPDFText(f.base64);
+      if(pdfText && pdfText.length>200){
+        f.text=pdfText;
+        setAStep("as1","active",`✓ ${f.name}: text PDF (${pdfText.length} chars)`);
+      } else if(ADI_EP && ADI_KEY){
+        setAStep("as1","active",`${f.name}: scanned - running Azure DI OCR...`);
+        try{
+          const t=await runAzureOCR(f.base64);
+          f.text=t||`[${f.name}: OCR returned no text]`;
+          if(t&&t.length>50){f.ocrDone=true;ocrCount++;}
+          setAStep("as1","active",`✓ ${f.name}: OCR done (${(t||"").length} chars)`);
+        }catch(e){
+          f.text=`[${f.name}: OCR failed - ${e.message}]`;
+          setAStep("as1","active",`⚠ OCR failed for ${f.name}`);
+        }
+      } else {
+        f.text=`[${f.name}: SCANNED PDF - configure Azure DI in ⚙ Settings for OCR, or switch to Anthropic Claude provider]`;
+        setAStep("as1","active",`⚠ ${f.name}: scanned - no OCR configured`);
+      }
+    } else if(isImage){
+      if(ADI_EP && ADI_KEY){
+        try{const t=await runAzureOCR(f.base64);f.text=t;f.ocrDone=true;ocrCount++;}
+        catch(e){f.text=`[Image OCR failed: ${e.message}]`;}
+      } else {
+        f.text=`[${f.name}: image file - configure Azure DI for OCR]`;
+      }
+    }
+  }
+
+  setAStep("as1","done", ocrCount>0
+    ? `✅ OCR complete - ${ocrCount} file(s) processed via Azure DI`
+    : "✅ Text extraction complete");
+  setProgress(30,"Building content for DeepSeek...");
+
+  let docContent = `PROJECT: ${projectName}\nCURRENCY: ${currency}\n\n`;
+  for(const f of FILES){
+    const roleLabel = f.role==="rfq" ? "RFQ / TENDER DOCUMENT" : "VENDOR QUOTE";
+    docContent += `\n${"=".repeat(50)}\n[${roleLabel}] ${f.name}\n${"=".repeat(50)}\n${(f.text||"").slice(0,14000)}\n`;
+  }
+
+  setAStep("as2","active","Sending to DeepSeek for analysis...");
+  setProgress(45,"Waiting for DeepSeek response...");
+
+  try{
+    const aiResult = await callAI(SYSTEM_PROMPT(projectName, currency), docContent);
+    setProgress(80,"Parsing response...");
+    setAStep("as2","done","✅ DeepSeek analysis complete");
+    await finishAnalysis(aiResult, currency, projectName);
+  }catch(e){
+    setAStep("as2","err","Error: "+e.message);
+    showErr("Analysis failed: "+e.message);
+  }
+}
+
+// ================================================
+//  PDF TEXT EXTRACTION (pdf.js)
+// ================================================
+async function extractPDFText(base64) {
+  if(typeof pdfjsLib==="undefined") return "";
+  try {
+    const binary = atob(base64);
+    const bytes = new Uint8Array(binary.length);
+    for(let i=0;i<binary.length;i++) bytes[i]=binary.charCodeAt(i);
+    const pdf = await pdfjsLib.getDocument({data:bytes}).promise;
+    let text = "";
+    for(let p=1;p<=Math.min(pdf.numPages,30);p++){
+      const page = await pdf.getPage(p);
+      const tc = await page.getTextContent();
+      const pageText = tc.items.map(i=>i.str).join(" ");
+      if(pageText.trim()) text += `\n--- Page ${p} ---\n${pageText}\n`;
+    }
+    return text.trim();
+  } catch(e){ return ""; }
+}
+
+// ================================================
+//  AZURE DOCUMENT INTELLIGENCE OCR
+//  Uses prebuilt-layout (extracts tables + lines)
+//  prebuilt-read only gets lines - misses table structure
+// ================================================
+async function runAzureOCR(base64) {
+  const ep = ADI_EP.replace(/\/$/,"");
+  // prebuilt-layout: extracts tables, lines, paragraphs, key-value pairs
+  // Much better than prebuilt-read for pricing table documents
+  const url = `${ep}/documentintelligence/documentModels/prebuilt-layout:analyze?api-version=2024-02-29-preview`;
+
+  const startR = await fetch(url, {
+    method: "POST",
+    headers: {
+      "Ocp-Apim-Subscription-Key": ADI_KEY,
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({ base64Source: base64 })
+  });
+
+  if(!startR.ok) {
+    const t = await startR.text();
+    throw new Error("ADI " + startR.status + ": " + t.slice(0, 200));
+  }
+
+  const opUrl = startR.headers.get("Operation-Location");
+  if(!opUrl) throw new Error("No Operation-Location from Azure DI");
+
+  // Poll for result (up to 120 seconds)
+  for(let i = 0; i < 60; i++) {
+    await new Promise(r => setTimeout(r, 2000));
+    const poll = await fetch(opUrl, {
+      headers: { "Ocp-Apim-Subscription-Key": ADI_KEY }
+    });
+    if(!poll.ok) throw new Error("Poll error: " + poll.status);
+    const d = await poll.json();
+
+    if(d.status === "succeeded") {
+      const result = d.analyzeResult;
+      let fullText = "";
+
+      // -- Extract TABLES first (most important for pricing documents) --
+      const tables = result?.tables || [];
+      if(tables.length > 0) {
+        fullText += `\n=== TABLES EXTRACTED (${tables.length} tables) ===\n`;
+        tables.forEach((tbl, ti) => {
+          fullText += `\n[Table ${ti+1}] - ${tbl.rowCount} rows × ${tbl.columnCount} columns\n`;
+          // Build row-indexed structure
+          const rows = {};
+          (tbl.cells || []).forEach(cell => {
+            if(!rows[cell.rowIndex]) rows[cell.rowIndex] = [];
+            rows[cell.rowIndex][cell.columnIndex] = (cell.content || "").replace(/\n/g," ").trim();
+          });
+          // Output each row as pipe-separated
+          Object.keys(rows).sort((a,b)=>Number(a)-Number(b)).forEach(ri => {
+            const rowArr = rows[ri];
+            const rowStr = Array.from({length: tbl.columnCount}, (_,ci) => rowArr[ci]||"").join(" | ");
+            fullText += rowStr + "\n";
+          });
+        });
+      }
+
+      // -- Extract TEXT LINES per page (context + headers + labels) --
+      const pages = result?.pages || [];
+      fullText += `\n=== TEXT BY PAGE (${pages.length} pages) ===\n`;
+      pages.forEach((pg, idx) => {
+        const lines = (pg.lines || []).map(l => l.content).join("\n");
+        if(lines.trim()) {
+          fullText += `\n--- Page ${idx+1} ---\n${lines}\n`;
+        }
+      });
+
+      // -- Extract KEY-VALUE PAIRS (if present) --
+      const kvPairs = result?.keyValuePairs || [];
+      if(kvPairs.length > 0) {
+        fullText += `\n=== KEY-VALUE PAIRS ===\n`;
+        kvPairs.forEach(kv => {
+          const key = kv.key?.content || "";
+          const val = kv.value?.content || "";
+          if(key && val) fullText += `${key}: ${val}\n`;
+        });
+      }
+
+      return fullText.trim();
+    }
+
+    if(d.status === "failed") {
+      throw new Error("Azure DI analysis failed: " + JSON.stringify(d.error || {}));
+    }
+    // status === "running" - keep polling
+  }
+  throw new Error("OCR timed out after 120 seconds");
+}
+
+async function callClaudeWithBlocks(system, contentBlocks, maxTokens=4000) {
+  if(!API_KEY) throw new Error("No API key. Click ⚙ Settings.");
+  const MAX_RETRY=3, BASE_DELAY=5000;
+  for(let attempt=0;attempt<=MAX_RETRY;attempt++){
+    const r = await fetch("https://api.anthropic.com/v1/messages",{
+      method:"POST",
+      headers:{
+        "Content-Type":"application/json",
+        "x-api-key":API_KEY,
+        "anthropic-version":"2023-06-01",
+        "anthropic-dangerous-direct-browser-access":"true"
+      },
+      body:JSON.stringify({
+        model:"claude-sonnet-4-6",
+        max_tokens: maxTokens,
+        temperature: 0,        // DETERMINISTIC — same input = same output every run
+        system,
+        messages:[{role:"user", content: contentBlocks}]
+      })
+    });
+    if(r.status===429||r.status===529){
+      if(attempt===MAX_RETRY) throw new Error("Rate limit exceeded. Please wait a minute and try again.");
+      const delay = BASE_DELAY*Math.pow(2,attempt);
+      setAStep("as2","active",`Rate limited - retrying in ${Math.round(delay/1000)}s...`);
+      await new Promise(res=>setTimeout(res,delay));
+      continue;
+    }
+    if(!r.ok){
+      const e=await r.json().catch(()=>({}));
+      throw new Error(e.error?.message||"Claude API error "+r.status);
+    }
+    const d=await r.json();
+    return d.content.filter(b=>b.type==="text").map(b=>b.text).join("");
+  }
+  throw new Error("All retries exhausted.");
+}
+
+// Safe localStorage - Edge Tracking Prevention can block it
+function lsGet(key, def="") {
+  try { return localStorage.getItem(key)||def; } catch(e) { return def; }
+}
+function lsSet(key, val) {
+  try { localStorage.setItem(key,val); } catch(e) {
+    console.warn("localStorage blocked by browser privacy settings. Key:",key);
+  }
+}
+
+// ================================================
+//  DEEPSEEK API - text only (called by runWithDeepSeek)
+// ================================================
+async function callAI(system, content) {
+  if(!API_KEY) throw new Error("No API key configured. Click ⚙ Settings.");
+  const MAX_RETRY=4, BASE_DELAY=3000;
+  for(let attempt=0;attempt<=MAX_RETRY;attempt++){
+    let r;
+    if(PROVIDER==="anthropic"){
+      r = await fetch("https://api.anthropic.com/v1/messages",{method:"POST",
+        headers:{"Content-Type":"application/json","x-api-key":API_KEY,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},
+        body:JSON.stringify({model:"claude-sonnet-4-6",max_tokens:4000,temperature:0,system,
+          messages:[{role:"user",content:[{type:"text",text:content}]}]})});
+    } else {
+      r = await fetch("https://api.deepseek.com/chat/completions",{method:"POST",
+        headers:{"Content-Type":"application/json","Authorization":"Bearer "+API_KEY},
+        body:JSON.stringify({model:"deepseek-chat",max_tokens:4000,temperature:0,
+          messages:[{role:"system",content:system},{role:"user",content:content}]})});
+    }
+    if(r.status===429||r.status===529){
+      if(attempt===MAX_RETRY) throw new Error("Rate limit exceeded after "+MAX_RETRY+" retries. Please wait and try again.");
+      const delay=BASE_DELAY*Math.pow(2,attempt);
+      setAStep("as2","active",`Rate limited - retrying in ${Math.round(delay/1000)}s (attempt ${attempt+1}/${MAX_RETRY})...`);
+      await new Promise(res=>setTimeout(res,delay));
+      continue;
+    }
+    if(!r.ok){const e=await r.json().catch(()=>({}));throw new Error(e.error?.message||"API error "+r.status);}
+    const d=await r.json();
+    if(PROVIDER==="anthropic") return d.content.filter(b=>b.type==="text").map(b=>b.text).join("");
+    return d.choices[0].message.content;
+  }
+  throw new Error("All retries exhausted - please try again.");
+}
+
+function fmt(n){if(!n||isNaN(n))return "N/A";return Number(n).toLocaleString("en-PK",{minimumFractionDigits:0,maximumFractionDigits:0});}
+
+function renderResults(d, currency, projectName) {
+  const vendors = d.vendors || [];
+  const winner  = d.recommendation?.winner || (vendors[0]?.name||"");
+  const ranking = d.ranking || [];
+
+  // Sort vendors by ranking if available
+  const rankedVendors = [...vendors].sort((a,b)=>{
+    const ra = ranking.find(r=>r.vendor===a.name)?.rank||99;
+    const rb = ranking.find(r=>r.vendor===b.name)?.rank||99;
+    return ra-rb;
+  });
+
+  // -- Executive Summary --
+  document.getElementById("exec-summary-card").innerHTML=`
+    <h3>📋 Executive Summary - ${projectName}</h3>
+    <p>${d.executiveSummary||"No summary generated."}</p>
+    ${d.rfqScope?`<p style="margin-top:8px;font-size:12px;color:var(--text2)">Scope: ${d.rfqScope}</p>`:""}`;
+
+  // -- Recommendation --
+  if(d.recommendation){
+    const rec=d.recommendation;
+    document.getElementById("rec-card").innerHTML=`
+      <h3>🏆 Recommended Award</h3>
+      <div class="rec-winner">${rec.winner}</div>
+      <div class="rec-just">${rec.justification||""}</div>
+      ${rec.ppraNote?`<div style="margin-top:10px;font-size:11.5px;color:var(--teal);background:rgba(14,168,122,.06);padding:8px 12px;border-radius:6px">📌 PPRA: ${rec.ppraNote}</div>`:""}
+      ${d.ppraNote&&d.ppraNote!==rec.ppraNote?`<div style="margin-top:8px;font-size:11.5px;color:var(--text2)">${d.ppraNote}</div>`:""}`;
+  }
+
+  // -- Vendor Cards --
+  document.getElementById("vendor-cards").innerHTML = rankedVendors.map(v=>{
+    const isWinner = v.name===winner;
+    const rank = ranking.find(r=>r.vendor===v.name);
+    const total = v.grandTotalExclGST || v.grandTotalInclGST || v.totalSupplyPKR || 0;
+    return `<div class="vendor-card${isWinner?" winner":""}">
+      ${isWinner?`<div class="winner-badge">🏆 RECOMMENDED</div>`:`<div class="winner-badge" style="background:var(--surface2);color:var(--text2)">RANK ${rank?.rank||"-"}</div>`}
+      <div class="vc-name">${v.name}</div>
+      <div class="vc-total${isWinner?" winner-price":""}">${currency} ${fmt(total)}</div>
+      <div class="vc-row"><span class="lbl">Supply (excl GST)</span><span class="val">${fmt(v.totalSupplyPKR)}</span></div>
+      <div class="vc-row"><span class="lbl">Installation</span><span class="val">${fmt(v.totalInstallationPKR)}</span></div>
+      <div class="vc-row"><span class="lbl">Grand Total incl GST</span><span class="val">${fmt(v.grandTotalInclGST)}</span></div>
+      <div class="vc-row"><span class="lbl">Brand</span><span class="val">${v.brand||"N/A"}</span></div>
+      <div class="vc-row"><span class="lbl">Panel Type</span><span class="val">${v.panelType||"N/A"}</span></div>
+      <div class="vc-row"><span class="lbl">Delivery</span><span class="val">${v.deliveryWeeks||"N/A"}</span></div>
+      <div class="vc-row"><span class="lbl">Payment</span><span class="val">${v.paymentTerms||"N/A"}</span></div>
+      <div class="vc-row"><span class="lbl">Warranty</span><span class="val">${v.warranty||"N/A"}</span></div>
+      <div class="vc-row"><span class="lbl">Validity</span><span class="val">${v.validityDays||"N/A"}</span></div>
+      <div class="vc-tags">
+        ${(v.strengths||[]).slice(0,2).map(s=>`<span class="tag tag-strength">✓ ${s}</span>`).join("")}
+        ${(v.concerns||[]).slice(0,2).map(s=>`<span class="tag tag-concern">⚠ ${s}</span>`).join("")}
+        ${(v.missingItems||[]).slice(0,1).map(s=>`<span class="tag tag-missing">✗ ${s}</span>`).join("")}
+      </div>
+    </div>`;
+  }).join("");
+
+  // -- Comparison Table --
+  const rows = [
+    ["Total Supply (excl GST)", v=>fmt(v.totalSupplyPKR)],
+    ["Total Installation",       v=>fmt(v.totalInstallationPKR)],
+    ["Grand Total excl GST",     v=>fmt(v.grandTotalExclGST)],
+    ["Grand Total incl GST",     v=>fmt(v.grandTotalInclGST)],
+    ["Brand",                    v=>v.brand||"-"],
+    ["Panel Type",               v=>v.panelType||"-"],
+    ["Delivery",                 v=>v.deliveryWeeks||"-"],
+    ["Payment Terms",            v=>v.paymentTerms||"-"],
+    ["Warranty",                 v=>v.warranty||"-"],
+    ["Validity",                 v=>v.validityDays||"-"],
+  ];
+
+  // Find best (lowest) for numeric rows
+  const numRows=["Total Supply (excl GST)","Total Installation","Grand Total excl GST","Grand Total incl GST"];
+
+  const tbl = document.getElementById("comp-table");
+  tbl.innerHTML = `
+    <thead><tr>
+      <th>Criteria</th>
+      ${rankedVendors.map(v=>`<th>${v.name}${v.name===winner?" 🏆":""}</th>`).join("")}
+    </tr></thead>
+    <tbody>
+    ${rows.map(([label,fn])=>{
+      const vals = rankedVendors.map(v=>fn(v));
+      const isNum = numRows.includes(label);
+      let bestIdx = -1;
+      if(isNum){
+        const nums = vals.map(v=>parseFloat(v.replace(/,/g,""))||Infinity);
+        bestIdx = nums.indexOf(Math.min(...nums.filter(n=>n!==Infinity)));
+      }
+      return `<tr>
+        <td class="label-col">${label}</td>
+        ${vals.map((v,i)=>`<td class="num${isNum&&i===bestIdx?" best":""}">${v}</td>`).join("")}
+      </tr>`;
+    }).join("")}
+    </tbody>`;
+
+  // -- Anomalies --
+const anomalies = d.anomalies || [];
+if(anomalies.length){
+  document.getElementById("anomalies-card").style.display = "block";
+  document.getElementById("anomalies-list").innerHTML = anomalies.map(a => {
+    const text = typeof a === "string" ? a : (a.description || a.message || a.note || a.text || JSON.stringify(a));
+    return `<li>${text}</li>`;
+  }).join("");
+}
+}
+
+function startOver(){FILES=[];RESULT=null;document.getElementById("file-list").innerHTML="";document.getElementById("project-name").value="";goPanel(1);setStep(1,"active");document.getElementById("btn-analyse").disabled=true;}
+function copyJSON(){if(RESULT)navigator.clipboard.writeText(JSON.stringify(RESULT,null,2));}
+async function downloadPDF() {
+  const panel = document.getElementById("downlaod-panel");
+
+  const canvas = await html2canvas(panel, {
+    scale: 2,
+    useCORS: true,
+    backgroundColor: "#ffffff"
+  });
+
+  const imgData = canvas.toDataURL("image/png");
+
+  const { jsPDF } = window.jspdf;
+
+  const pdf = new jsPDF("p", "mm", "a4");
+
+  const pdfWidth = pdf.internal.pageSize.getWidth();
+  const pdfHeight = pdf.internal.pageSize.getHeight();
+
+  const imgWidth = pdfWidth;
+  const imgHeight =
+    (canvas.height * imgWidth) / canvas.width;
+
+  let heightLeft = imgHeight;
+  let position = 0;
+
+  pdf.addImage(
+    imgData,
+    "PNG",
+    0,
+    position,
+    imgWidth,
+    imgHeight
+  );
+
+  heightLeft -= pdfHeight;
+
+  while (heightLeft > 0) {
+    position = heightLeft - imgHeight;
+
+    pdf.addPage();
+
+    pdf.addImage(
+      imgData,
+      "PNG",
+      0,
+      position,
+      imgWidth,
+      imgHeight
+    );
+
+    heightLeft -= pdfHeight;
+  }
+
+  pdf.save("MMC_Bid_Analysis.pdf");
+}
+async function getPdfBlob() {
+  const panel = document.getElementById('downlaod-panel');
+
+  const canvas = await html2canvas(panel, {
+    scale: 2,
+    useCORS: true,
+    backgroundColor: '#ffffff'
+  });
+
+  const imgData = canvas.toDataURL('image/png');
+
+  const { jsPDF } = window.jspdf;
+
+  const pdf = new jsPDF('p', 'mm', 'a4');
+
+  const pdfWidth = pdf.internal.pageSize.getWidth();
+  const pdfHeight = pdf.internal.pageSize.getHeight();
+
+  const imgWidth = pdfWidth;
+  const imgHeight =
+    (canvas.height * imgWidth) / canvas.width;
+
+  let heightLeft = imgHeight;
+  let position = 0;
+
+  pdf.addImage(
+    imgData,
+    'PNG',
+    0,
+    position,
+    imgWidth,
+    imgHeight
+  );
+
+  heightLeft -= pdfHeight;
+
+  while (heightLeft > 0) {
+    position = heightLeft - imgHeight;
+
+    pdf.addPage();
+
+    pdf.addImage(
+      imgData,
+      'PNG',
+      0,
+      position,
+      imgWidth,
+      imgHeight
+    );
+
+    heightLeft -= pdfHeight;
+  }
+
+  return pdf.output('blob');
+}
+async function sendEmail() {
+  const email = prompt(
+    'Enter recipient email'
+  );
+
+  if (!email) return;
+
+  try {
+    const pdfBlob =
+      await getPdfBlob();
+
+    const formData =
+      new FormData();
+
+    formData.append(
+      'email',
+      email
+    );
+
+    formData.append(
+      'subject',
+      'MMC Bid Analysis Report'
+    );
+
+    formData.append(
+      'body',
+      `
+      <h2>MMC Bid Analysis Report</h2>
+      <p>Please find attached the bid analysis report.</p>
+      `
+    );
+
+    formData.append(
+      'file',
+      pdfBlob,
+      'MMC_Bid_Analysis.pdf'
+    );
+
+    const response =
+      await fetch(
+        `${BACKEND_URL}/api/send-report`,
+        {
+          method: 'POST',
+          body: formData
+        }
+      );
+
+  const text = await response.text();
+
+console.log(text);
+
+let result = {};
+if (text) {
+  result = JSON.parse(text);
+}
+
+    if (!response.ok) {
+      throw new Error(
+        result.error
+      );
+    }
+
+    alert(
+      'Email sent successfully.'
+    );
+  } catch (err) {
+    console.error(err);
+
+    alert(
+      'Failed to send email: ' +
+      err.message
+    );
+  }
+}
+
+</script>
+</body>
+</html>

@@ -1,0 +1,635 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>MMC AI Suite</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#f4f5f8;--surface:#fff;--border:#dde1ec;--border-h:#a8b4d0;
+  --text:#111827;--muted:#5a6480;--soft:#9aa3be;
+  --mmc:#003087;--byd:#e60012;
+  --blue:#1d4ed8;--blue-bg:#eff4ff;--blue-bd:#bfcffb;
+  --teal:#0e7490;--teal-bg:#f0fbff;--teal-bd:#a5e4f5;
+  --green:#0d9467;--green-bg:#edfaf5;--green-bd:#a7e8d2;
+}
+html{scroll-behavior:smooth}
+body{font-family:'Inter',sans-serif;font-size:15px;line-height:1.6;color:var(--text);background:var(--bg);min-height:100vh;overflow-x:hidden}
+body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(circle,#c8d0e0 1px,transparent 1px);background-size:28px 28px;opacity:.35;pointer-events:none;z-index:0}
+
+/* NAV */
+nav{
+  position:sticky;top:0;z-index:200;
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 2.5rem;height:64px;
+  background:rgba(255,255,255,.96);backdrop-filter:blur(20px);
+  border-bottom:1px solid var(--border);
+  box-shadow:0 1px 8px rgba(0,0,0,.05);
+}
+.nav-left{display:flex;align-items:center}
+.nav-sep{width:1px;height:32px;background:var(--border);margin:0 18px}
+.nav-right{display:flex;align-items:center;gap:1.5rem}
+.nav-right a{color:var(--muted);text-decoration:none;font-size:13px;font-weight:500;transition:color .15s}
+.nav-right a:hover{color:var(--text)}
+.nav-pill{font-size:11px;font-weight:500;background:var(--green-bg);color:var(--green);border:1px solid var(--green-bd);padding:4px 11px;border-radius:20px;display:flex;align-items:center;gap:5px}
+.dot{width:6px;height:6px;border-radius:50%;background:#22c55e;animation:blink 2s infinite;flex-shrink:0}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+
+/* BANNER */
+.banner{position:relative;z-index:1;width:100%;height:460px;overflow:hidden;background:#060d1f}
+
+/* AI scanning animation overlay */
+.ai-scan{
+  position:absolute;inset:0;z-index:3;pointer-events:none;overflow:hidden;
+}
+.ai-scan::before{
+  content:'';position:absolute;left:0;right:0;height:3px;
+  background:linear-gradient(90deg,transparent,rgba(96,165,250,.9),rgba(167,139,250,.9),transparent);
+  animation:scanline 3s linear infinite;
+  box-shadow:0 0 18px 6px rgba(96,165,250,.5);
+}
+@keyframes scanline{
+  0%{top:-4px}
+  100%{top:100%}
+}
+.ai-scan::after{
+  content:'';position:absolute;inset:0;
+  background:repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 3px,
+    rgba(96,165,250,.03) 3px,
+    rgba(96,165,250,.03) 4px
+  );
+  animation:flicker 8s linear infinite;
+}
+@keyframes flicker{
+  0%,100%{opacity:.6}50%{opacity:1}
+}
+
+/* AI corner brackets */
+.ai-corner{position:absolute;z-index:4;width:36px;height:36px;pointer-events:none}
+.ai-corner.tl{top:20px;left:20px;border-top:2px solid rgba(96,165,250,.7);border-left:2px solid rgba(96,165,250,.7)}
+.ai-corner.tr{top:20px;right:20px;border-top:2px solid rgba(96,165,250,.7);border-right:2px solid rgba(96,165,250,.7)}
+.ai-corner.bl{bottom:44px;left:20px;border-bottom:2px solid rgba(96,165,250,.7);border-left:2px solid rgba(96,165,250,.7)}
+.ai-corner.br{bottom:44px;right:20px;border-bottom:2px solid rgba(96,165,250,.7);border-right:2px solid rgba(96,165,250,.7)}
+
+/* AI status tag */
+.ai-tag{
+  position:absolute;top:20px;right:65px;z-index:5;
+  font-family:'Inter',sans-serif;font-size:10px;font-weight:600;
+  letter-spacing:.1em;text-transform:uppercase;
+  color:rgba(96,165,250,.9);
+  border:1px solid rgba(96,165,250,.35);
+  background:rgba(0,0,0,.45);
+  padding:4px 10px;border-radius:4px;
+  display:flex;align-items:center;gap:6px;
+}
+.ai-tag-dot{width:5px;height:5px;border-radius:50%;background:#60a5fa;animation:blink 1.5s infinite}
+.banner-overlay{position:absolute;inset:0;z-index:2;background:linear-gradient(to right,rgba(3,10,30,.92) 0%,rgba(3,10,30,.72) 45%,rgba(3,10,30,.12) 100%)}
+
+
+
+.banner-content{position:absolute;left:0;top:0;bottom:0;display:flex;flex-direction:column;justify-content:center;padding:3rem 3.5rem;z-index:3;max-width:540px}
+.b-chip{display:inline-flex;align-items:center;gap:7px;font-size:10.5px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:#93c5fd;background:rgba(29,78,216,.22);border:1px solid rgba(147,197,253,.22);padding:5px 13px;border-radius:20px;margin-bottom:1.1rem;width:fit-content}
+.banner-content h1{font-size:clamp(26px,4vw,44px);font-weight:700;line-height:1.1;letter-spacing:-.025em;color:#fff;margin-bottom:.8rem}
+.banner-content h1 em{font-style:normal;background:linear-gradient(90deg,#60a5fa,#a78bfa);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.banner-content p{font-size:14.5px;color:rgba(255,255,255,.68);max-width:400px;margin-bottom:1.5rem;font-weight:300;line-height:1.65}
+.cta-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.btn-p{display:inline-flex;align-items:center;gap:8px;background:var(--mmc);color:#fff;font-weight:600;font-size:13px;padding:11px 22px;border-radius:7px;text-decoration:none;transition:opacity .2s,transform .15s}
+.btn-p:hover{opacity:.87;transform:translateY(-1px)}
+.btn-g{display:inline-flex;align-items:center;gap:7px;background:rgba(255,255,255,.1);color:#fff;font-size:13px;font-weight:500;padding:11px 20px;border-radius:7px;border:1px solid rgba(255,255,255,.2);text-decoration:none;transition:background .2s}
+.btn-g:hover{background:rgba(255,255,255,.18)}
+
+/* TOOLS AREA */
+.tools-area{position:relative;z-index:1;max-width:900px;margin:3rem auto 4rem;padding:0 2rem}
+.tools-heading{text-align:center;margin-bottom:2.5rem}
+.tools-heading h2{font-size:22px;font-weight:700;letter-spacing:-.02em;color:var(--text);margin-bottom:.4rem}
+.tools-heading p{font-size:14px;color:var(--muted)}
+
+/* TWO BIG CARDS */
+.big-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:20px}
+@media(max-width:600px){.big-cards{grid-template-columns:1fr}}
+
+.big-card{
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:16px;
+  padding:2rem;
+  text-decoration:none;color:inherit;
+  display:flex;flex-direction:column;
+  box-shadow:0 2px 12px rgba(0,0,0,.05);
+  transition:border-color .2s,box-shadow .2s,transform .18s;
+  position:relative;overflow:hidden;
+}
+.big-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;border-radius:16px 16px 0 0}
+.big-card.blue::before{background:linear-gradient(90deg,#1d4ed8,#60a5fa)}
+.big-card.teal::before{background:linear-gradient(90deg,#0e7490,#22d3ee)}
+.big-card:hover{border-color:var(--border-h);box-shadow:0 10px 32px rgba(0,0,0,.1);transform:translateY(-3px)}
+
+.bc-top{display:flex;align-items:flex-start;gap:14px;margin-bottom:1.25rem}
+.bc-icon{
+  width:52px;height:52px;border-radius:14px;
+  display:flex;align-items:center;justify-content:center;font-size:26px;flex-shrink:0;
+}
+.bc-icon.blue{background:var(--blue-bg)}
+.bc-icon.teal{background:var(--teal-bg)}
+.bc-label{display:flex;flex-direction:column;gap:4px;padding-top:4px}
+.bc-tag{font-size:10px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;padding:2px 8px;border-radius:20px;width:fit-content}
+.bt-blue{background:var(--blue-bg);color:var(--blue);border:1px solid var(--blue-bd)}
+.bt-teal{background:var(--teal-bg);color:var(--teal);border:1px solid var(--teal-bd)}
+.bc-title{font-size:17px;font-weight:700;color:var(--text);letter-spacing:-.015em}
+
+.bc-desc{font-size:13.5px;color:var(--muted);line-height:1.6;margin-bottom:1.5rem;flex:1}
+
+.bc-features{display:flex;flex-direction:column;gap:8px;margin-bottom:1.5rem}
+.bc-feat{display:flex;align-items:flex-start;gap:8px;font-size:12.5px;color:var(--muted)}
+.bc-feat-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0;margin-top:5px}
+.dot-blue{background:var(--blue)} .dot-teal{background:var(--teal)}
+
+.bc-btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:7px;
+  font-size:13px;font-weight:600;padding:11px 0;border-radius:8px;
+  text-decoration:none;width:100%;
+  transition:opacity .2s,transform .15s;
+}
+.bc-btn.blue{background:var(--blue);color:#fff}
+.bc-btn.teal{background:var(--teal);color:#fff}
+.bc-btn:hover{opacity:.87;transform:translateY(-1px)}
+
+/* COMING SOON */
+.coming-soon{
+  position:relative;z-index:1;
+  max-width:900px;margin:0 auto 3rem;padding:0 2rem;
+  text-align:center;
+}
+.cs-pill{
+  display:inline-flex;align-items:center;gap:6px;
+  font-size:12px;color:var(--soft);
+  background:var(--surface);border:1px solid var(--border);
+  padding:6px 16px;border-radius:20px;
+}
+
+/* FOOTER */
+footer{
+  position:relative;z-index:1;
+  display:flex;align-items:center;justify-content:space-between;
+  padding:1.25rem 2.5rem;border-top:1px solid var(--border);
+  background:var(--surface);font-size:12px;color:var(--soft);flex-wrap:wrap;gap:8px;
+}
+
+/* ── CHATBOT ── */
+#cb-btn{
+  position:fixed;bottom:28px;right:28px;z-index:1000;
+  width:56px;height:56px;border-radius:50%;
+  background:linear-gradient(135deg,#003087,#1d4ed8);
+  border:none;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  box-shadow:0 4px 20px rgba(29,78,216,.4);
+  transition:transform .2s,box-shadow .2s;
+}
+#cb-btn:hover{transform:scale(1.08);box-shadow:0 6px 28px rgba(29,78,216,.55)}
+#cb-btn svg{width:26px;height:26px;color:#fff;transition:opacity .2s}
+
+#cb-window{
+  position:fixed;bottom:96px;right:28px;z-index:1000;
+  width:370px;height:520px;
+  background:#fff;border:1px solid #dde1ec;border-radius:18px;
+  box-shadow:0 12px 48px rgba(0,0,0,.18);
+  display:flex;flex-direction:column;overflow:hidden;
+  transform:scale(.92) translateY(16px);opacity:0;
+  pointer-events:none;
+  transition:transform .25s cubic-bezier(.34,1.56,.64,1),opacity .2s;
+}
+#cb-window.open{transform:scale(1) translateY(0);opacity:1;pointer-events:all}
+
+#cb-head{
+  display:flex;align-items:center;gap:10px;
+  padding:14px 16px;
+  background:linear-gradient(135deg,#003087,#1d4ed8);
+  flex-shrink:0;
+}
+#cb-head-icon{
+  width:36px;height:36px;border-radius:50%;
+  background:rgba(255,255,255,.2);
+  display:flex;align-items:center;justify-content:center;
+  font-size:18px;flex-shrink:0;
+}
+#cb-head-info{flex:1}
+#cb-head-info h4{font-size:13.5px;font-weight:600;color:#fff;margin:0}
+#cb-head-info p{font-size:11px;color:rgba(255,255,255,.7);margin:0}
+#cb-close{background:none;border:none;cursor:pointer;color:rgba(255,255,255,.7);
+  display:flex;padding:4px;border-radius:6px;transition:background .15s}
+#cb-close:hover{background:rgba(255,255,255,.15);color:#fff}
+
+#cb-msgs{
+  flex:1;overflow-y:auto;padding:14px;
+  display:flex;flex-direction:column;gap:10px;
+  background:#f4f5f8;
+}
+#cb-msgs::-webkit-scrollbar{width:4px}
+#cb-msgs::-webkit-scrollbar-track{background:transparent}
+#cb-msgs::-webkit-scrollbar-thumb{background:#dde1ec;border-radius:4px}
+
+.cb-msg{display:flex;gap:8px;align-items:flex-end;max-width:100%}
+.cb-msg.bot{flex-direction:row}
+.cb-msg.user{flex-direction:row-reverse}
+
+.cb-avatar{
+  width:28px;height:28px;border-radius:50%;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;font-size:14px;
+}
+.cb-msg.bot .cb-avatar{background:linear-gradient(135deg,#003087,#1d4ed8);color:#fff;font-size:12px;font-weight:700}
+.cb-msg.user .cb-avatar{background:#e4e7ef;color:#5a6480;font-size:12px}
+
+.cb-bubble{
+  padding:9px 12px;border-radius:14px;
+  font-size:13px;line-height:1.55;max-width:260px;word-break:break-word;
+}
+.cb-msg.bot  .cb-bubble{background:#fff;color:#111827;border:1px solid #dde1ec;border-bottom-left-radius:4px}
+.cb-msg.user .cb-bubble{background:#1d4ed8;color:#fff;border-bottom-right-radius:4px}
+
+.cb-typing{display:flex;gap:4px;align-items:center;padding:10px 14px}
+.cb-typing span{
+  width:7px;height:7px;border-radius:50%;background:#9aa3be;
+  animation:cb-dot 1.2s infinite;
+}
+.cb-typing span:nth-child(2){animation-delay:.2s}
+.cb-typing span:nth-child(3){animation-delay:.4s}
+@keyframes cb-dot{0%,60%,100%{transform:translateY(0)}30%{transform:translateY(-6px)}}
+
+.cb-suggestions{
+  padding:0 14px 10px;display:flex;flex-wrap:wrap;gap:6px;background:#f4f5f8;flex-shrink:0;
+}
+.cb-sugg{
+  font-size:11.5px;padding:5px 11px;border-radius:20px;
+  background:#fff;border:1px solid #dde1ec;color:#5a6480;
+  cursor:pointer;transition:border-color .15s,color .15s;
+  font-family:'Inter',sans-serif;
+}
+.cb-sugg:hover{border-color:#1d4ed8;color:#1d4ed8}
+
+#cb-form{
+  display:flex;align-items:center;gap:8px;
+  padding:10px 12px;border-top:1px solid #dde1ec;
+  background:#fff;flex-shrink:0;
+}
+#cb-input{
+  flex:1;border:1px solid #dde1ec;border-radius:24px;
+  padding:8px 14px;font-size:13px;outline:none;
+  font-family:'Inter',sans-serif;color:#111827;background:#f4f5f8;
+  transition:border-color .2s;
+}
+#cb-input:focus{border-color:#1d4ed8;background:#fff}
+#cb-send{
+  width:36px;height:36px;border-radius:50%;
+  background:#1d4ed8;border:none;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  transition:background .15s;flex-shrink:0;
+}
+#cb-send:hover{background:#1e40af}
+#cb-send:disabled{background:#9aa3be;cursor:not-allowed}
+
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <div class="nav-left">
+    <a href="https://byd-mega.com" target="_blank" style="display:flex;align-items:center;text-decoration:none">
+    </a>
+  </div>
+  <div class="nav-right">
+    <a href="#">Home</a>
+    <a href="#">Admin</a>
+    <span class="nav-pill"><span class="dot"></span>Live</span>
+  </div>
+</nav>
+
+<!-- BANNER -->
+<div class="banner">
+  <!-- Background video -->
+  <video
+    autoplay muted loop playsinline
+    style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:1;"
+  >
+    </video>
+    <div class="banner-overlay"></div>
+  <div class="ai-scan"></div>
+  <div class="ai-corner tl"></div>
+  <div class="ai-corner tr"></div>
+  <div class="ai-corner bl"></div>
+  <div class="ai-corner br"></div>
+  <div class="ai-tag"><span class="ai-tag-dot"></span>AI Visual Processing</div>
+  <div class="banner-content">
+    <div class="b-chip">MMC · BYD Pakistan — Enterprise AI</div>
+    <h1>AI-powered tools<br>for <em>MMC operations</em></h1>
+    <p>Purpose-built AI utilities for Mega Motor Company — streamlining procurement evaluation and multilingual document workflows.</p>
+    <div class="cta-row">
+      <a href="#tools" class="btn-p">
+        Get started
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2.5 7h9M8 3.5l3.5 3.5L8 10.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </a>
+      <a href="#" class="btn-g">Request access</a>
+    </div>
+  </div>
+
+    <div class="sdot" onclick="goSlide(1)"></div>
+    <div class="sdot" onclick="goSlide(2)"></div>
+  </div>
+</div>
+
+<!-- TOOLS -->
+<div class="tools-area" id="tools">
+  <div class="tools-heading">
+    <h2>Available AI Tools</h2>
+    <p>Click a tool below to launch it</p>
+  </div>
+
+  <div class="big-cards">
+
+    <!-- CARD 1: Commercial Bid Evaluation -->
+    <a href="/commercial-bid.html" class="big-card blue">
+      <div class="bc-top">
+        <div class="bc-icon blue">📋</div>
+        <div class="bc-label">
+          <span class="bc-tag bt-blue">Procurement</span>
+          <span class="bc-title">Commercial Bid Evaluation</span>
+        </div>
+      </div>
+      <p class="bc-desc">Automatically evaluate commercial bids from vendors — score pricing, flag anomalies, and generate structured evaluation reports aligned with PPRA procurement rules.</p>
+      <div class="bc-features">
+        <div class="bc-feat"><div class="bc-feat-dot dot-blue"></div><span>Auto-score and rank vendor bids</span></div>
+        <div class="bc-feat"><div class="bc-feat-dot dot-blue"></div><span>Compare pricing across submissions</span></div>
+        <div class="bc-feat"><div class="bc-feat-dot dot-blue"></div><span>Generate evaluation summary reports</span></div>
+        <div class="bc-feat"><div class="bc-feat-dot dot-blue"></div><span>PPRA-compliant output format</span></div>
+      </div>
+      <span class="bc-btn blue">
+        Launch Tool
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2.5 7h9M8 3.5l3.5 3.5L8 10.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </span>
+    </a>
+
+    <!-- CARD 2: Chinese Document Conversion -->
+    <a href="/document_translator.html" class="big-card teal">
+      <div class="bc-top">
+        <div class="bc-icon teal">🀄</div>
+        <div class="bc-label">
+          <span class="bc-tag bt-teal">Conversion</span>
+          <span class="bc-title">Chinese Document Conversion</span>
+        </div>
+      </div>
+      <p class="bc-desc">Convert and translate Chinese documents — Simplified or Traditional — into English. Ideal for BYD technical manuals, contracts, and supplier communications.</p>
+      <div class="bc-features">
+        <div class="bc-feat"><div class="bc-feat-dot dot-teal"></div><span>Simplified &amp; Traditional Chinese support</span></div>
+        <div class="bc-feat"><div class="bc-feat-dot dot-teal"></div><span>Preserves original formatting &amp; layout</span></div>
+        <div class="bc-feat"><div class="bc-feat-dot dot-teal"></div><span>Technical &amp; legal document accuracy</span></div>
+        <div class="bc-feat"><div class="bc-feat-dot dot-teal"></div><span>BYD manual &amp; spec sheet ready</span></div>
+      </div>
+      <span class="bc-btn teal">
+        Launch Tool
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M2.5 7h9M8 3.5l3.5 3.5L8 10.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </span>
+    </a>
+
+    <!-- CARD 3: AI General Assistant -->
+    <a href="#" class="big-card" style="border-color:var(--border);position:relative;overflow:hidden;" onclick="document.getElementById('cb-btn').click();return false;">
+      <div style="position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,#5b21b6,#a78bfa)"></div>
+      <div class="bc-top">
+        <div class="bc-icon" style="background:#f5f0ff;font-size:26px;">🤖</div>
+        <div class="bc-label">
+          <span class="bc-tag" style="background:#f5f0ff;color:#5b21b6;border:1px solid #c4b5fd;font-size:10px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;padding:3px 10px;border-radius:20px;">AI Assistant</span>
+          <span class="bc-title">MMC Policy Assistant</span>
+        </div>
+      </div>
+      <p class="bc-desc">Your 24/7 HR &amp; policy companion. Ask about leave, code of conduct, expenses, IT rules, performance appraisals, procurement policy, and more — instant answers, no waiting.</p>
+      <div class="bc-features">
+        <div class="bc-feat"><div class="bc-feat-dot" style="background:#5b21b6"></div><span>Leave, sick &amp; casual leave rules</span></div>
+        <div class="bc-feat"><div class="bc-feat-dot" style="background:#5b21b6"></div><span>Code of conduct &amp; grievance process</span></div>
+        <div class="bc-feat"><div class="bc-feat-dot" style="background:#5b21b6"></div><span>Expense &amp; procurement guidelines</span></div>
+        <div class="bc-feat"><div class="bc-feat-dot" style="background:#5b21b6"></div><span>IT, data &amp; AI usage policy</span></div>
+      </div>
+      <span class="bc-btn" style="background:linear-gradient(135deg,#5b21b6,#1d4ed8);color:#fff;display:inline-flex;align-items:center;justify-content:center;gap:7px;font-size:13px;font-weight:600;padding:11px 0;border-radius:8px;text-decoration:none;width:100%;margin-top:auto;transition:opacity .2s;">
+        Open Assistant
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+      </span>
+    </a>
+
+  </div>
+</div>
+
+<!-- COMING SOON -->
+<div class="coming-soon">
+  <span class="cs-pill">
+    <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><circle cx="6.5" cy="6.5" r="5.5" stroke="#9aa3be" stroke-width="1.2"/><path d="M6.5 4v3l2 1.5" stroke="#9aa3be" stroke-width="1.1" stroke-linecap="round"/></svg>
+    More tools coming soon — contact your admin to request a new utility
+  </span>
+</div>
+
+<!-- FOOTER -->
+<footer style="background:#111827;border-top:1px solid #2d3748;">
+  <div style="display:flex;align-items:center">
+  </div>
+  <span style="color:#9ca3af;">Mega Motor Company · Secured under org SSO · support@mmc.ai · © 2026</span>
+  <span style="color:#0d9467;font-weight:500">● All systems operational</span>
+</footer>
+
+
+
+<!-- ── CHATBOT WIDGET ── -->
+<button id="cb-btn" onclick="cbToggle()" title="MMC Policy Assistant">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+</button>
+
+<div id="cb-window">
+  <div id="cb-head">
+    <div id="cb-head-icon">M</div>
+    <div id="cb-head-info">
+      <h4>MMC Policy Assistant</h4>
+      <p>Ask about company policies &amp; HR</p>
+    </div>
+    <button id="cb-close" onclick="cbToggle()">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+    </button>
+  </div>
+
+  <div id="cb-sp-status" style="font-size:10.5px;padding:4px 14px;background:#f0fbff;border-bottom:1px solid #a5e4f5;color:#0e7490;font-family:'Inter',sans-serif;flex-shrink:0;display:flex;align-items:center;justify-content:space-between;">
+    <span id="cb-sp-text">📋 Built-in policies active</span>
+    <!-- <button onclick="testSPConnection()" style="font-size:10px;padding:2px 8px;border-radius:10px;border:1px solid #a5e4f5;background:#fff;color:#0e7490;cursor:pointer;font-family:'Inter',sans-serif;white-space:nowrap;" title="Test SharePoint connection">🔍 Test SP</button> -->
+  </div>
+  <!-- Prominent Test Button Row — always visible -->
+  <div style="padding:6px 12px;background:#fff8ed;border-bottom:1px solid #fcd86a;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;">
+    <span style="font-size:11px;color:#b45309;font-family:'Inter',sans-serif;">SharePoint not verified yet</span>
+    <!-- <button id="sp-test-big" onclick="testSPConnection()" style="font-size:11px;font-weight:600;padding:4px 14px;border-radius:8px;border:none;background:#b45309;color:#fff;cursor:pointer;font-family:'Inter',sans-serif;">🔍 Test SharePoint Connection</button> -->
+  </div>
+  <div id="cb-msgs">
+    <div class="cb-msg bot">
+      <div class="cb-avatar">M</div>
+      <div class="cb-bubble">Documents Loading...</div>
+    </div>
+  </div>
+
+  <div class="cb-suggestions" id="cb-sugg-area">
+    <button class="cb-sugg" onclick="cbSend('How many annual leave days do I get?')">Annual leave days?</button>
+    <button class="cb-sugg" onclick="cbSend('Company Policies?')">Company Policies</button>
+    <button class="cb-sugg" onclick="cbSend('How does the performance appraisal work?')">Performance review?</button>
+    <button class="cb-sugg" onclick="cbSend('What is the AI usage policy?')">AI usage rules?</button>
+  </div>
+
+  <form id="cb-form" onsubmit="return cbSubmit(event)">
+    <input id="cb-input" type="text" placeholder="Ask about MMC AI tools…" autocomplete="off"/>
+    <button id="cb-send" type="submit">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M14 2L2 8l4 2 2 4 6-12z" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </button>
+  </form>
+</div>
+
+
+<script>
+
+const BACKEND_URL = 'https://mmc-cdhncsgudefcf0hr.eastasia-01.azurewebsites.net';
+
+let cbOpen = false;
+let cbHistory = [];
+let cbTyping = false;
+let spLoaded = false;
+
+// ── Load SP docs from YOUR backend (no secrets in browser) ──
+async function loadFromSharePoint() {
+  try {
+    setSpStatus('⏳ Loading HR docs...', '#0e7490');
+    const res = await fetch(`${BACKEND_URL}/api/sp-docs`);
+    if (!res.ok) throw new Error(`Backend returned ${res.status}`);
+    const { docs } = await res.json();
+
+    if (!docs || !docs.length) {
+      setSpStatus('⚠️ No docs found — built-in policies active', '#b45309');
+      return;
+    }
+
+    // Tell the backend to use SP docs by storing them for the chat call
+    window._spDocs = docs;
+    setSpStatus(`📂 ${docs.length} HR doc(s) loaded`, '#0d9467');
+  } catch (err) {
+    console.warn('SP load failed:', err.message);
+    setSpStatus('⚠️ SP unavailable — built-in policies active', '#b45309');
+  }
+const meRes = await fetch(`${BACKEND_URL}/api/me`);
+const { displayName } = await meRes.json();
+window._userName = displayName;
+
+// Greeting update karo
+const firstName = displayName.split('.')[0];
+const greetingBubble = document.querySelector('#cb-msgs .cb-bubble');
+if (greetingBubble && displayName !== 'Employee') {
+  greetingBubble.innerHTML = `Hi <strong>${firstName}</strong>! I'm the MMC Policy Assistant. I can help you find answers about MMC company policies — leave, code of conduct, expenses, IT rules, performance, and more. What would you like to know?`;
+}
+}
+function cbToggle() {
+  cbOpen = !cbOpen;
+  document.getElementById('cb-window').classList.toggle('open', cbOpen);
+  if (cbOpen) {
+    setTimeout(() => document.getElementById('cb-input').focus(), 300);
+    if (!spLoaded) { spLoaded = true; loadFromSharePoint(); }
+  }
+}
+
+function cbSubmit(e) {
+  e.preventDefault();
+  const inp = document.getElementById('cb-input');
+  const val = inp.value.trim();
+  if (!val || cbTyping) return false;
+  cbSend(val);
+  return false;
+}
+
+function setSpStatus(msg, color) {
+  const sp = document.getElementById('cb-sp-text');
+  if (sp) { sp.textContent = msg; sp.style.color = color || '#0e7490'; }
+}
+
+function cbAddMsg(role, text) {
+  const msgs = document.getElementById('cb-msgs');
+  const div = document.createElement('div');
+  div.className = `cb-msg ${role}`;
+  const formatted = text
+    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\n/g, '<br>');
+  div.innerHTML = `
+    <div class="cb-avatar">${role === 'bot' ? 'M' : 'U'}</div>
+    <div class="cb-bubble">${formatted}</div>
+  `;
+  msgs.appendChild(div);
+  msgs.scrollTop = msgs.scrollHeight;
+  return div;
+}
+
+function cbAddTyping() {
+  const msgs = document.getElementById('cb-msgs');
+  const div = document.createElement('div');
+  div.className = 'cb-msg bot';
+  div.innerHTML = `
+    <div class="cb-avatar">M</div>
+    <div class="cb-bubble cb-typing">
+      <span></span><span></span><span></span>
+    </div>
+  `;
+  msgs.appendChild(div);
+  msgs.scrollTop = msgs.scrollHeight;
+  return div;
+}
+async function cbSend(text) {
+  if (cbTyping) return;
+  document.getElementById('cb-sugg-area').style.display = 'none';
+  cbAddMsg('user', text);
+  document.getElementById('cb-input').value = '';
+  cbTyping = true;
+  document.getElementById('cb-send').disabled = true;
+  const typingEl = cbAddTyping();
+  cbHistory.push({ role: 'user', content: text });
+
+  try {
+
+    const body = { userName: window._userName || 'Employee', messages: cbHistory.slice(-10) };
+
+    if (window._spDocs) {
+      body.spDocs = window._spDocs;
+    }
+
+    const res = await fetch(`${BACKEND_URL}/api/chat`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+
+    const data = await res.json();
+    typingEl.remove();
+
+    // 🔥 Absolute structural extraction fallback lookup
+    let reply = 'Sorry, I could not get a response. Please contact support@mmc.ai';
+    
+    if (data && data.content && data.content[0] && data.content[0].text) {
+      reply = data.content[0].text;
+    } else if (data && data.reply) {
+      reply = data.reply;
+    } else if (data && data.error) {
+      reply = `⚠️ Engine Error: ${data.error}`;
+    }
+
+    cbAddMsg('bot', reply);
+    cbHistory.push({ role: 'assistant', content: reply });
+  } catch (err) {
+    if (typingEl) typingEl.remove();
+    cbAddMsg('bot', `⚠️ Could not reach the assistant backend. Contact support@mmc.ai`);
+  }
+
+  cbTyping = false;
+  document.getElementById('cb-send').disabled = false;
+}
+</script>
+
+</body>
+</html>

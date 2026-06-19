@@ -1,0 +1,3152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Document Translator · Chinese → English</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Serif:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@pdf-lib/fontkit/dist/fontkit.umd.min.js"></script>
+<script>
+  // Configure pdf.js worker
+  if (typeof pdfjsLib !== 'undefined') {
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+  }
+</script>
+<style>
+  :root {
+    --bg-base: #f4f5f8;
+    --bg-elev: #ffffff;
+    --bg-elev-2: #eef0f5;
+    --bg-elev-3: #e4e7ef;
+    --line: #dde1ec;
+    --line-bright: #b0bbd6;
+    --accent: #1d4ed8;
+    --accent-dim: #1e40af;
+    --accent-glow: rgba(29,78,216,0.1);
+    --amber: #b45309;
+    --green: #0d9467;
+    --red: #dc2626;
+    --text: #111827;
+    --text-dim: #5a6480;
+    --text-faint: #9aa3be;
+    --font-sans: 'IBM Plex Sans', 'Inter', -apple-system, sans-serif;
+    --font-mono: 'IBM Plex Mono', 'Courier New', monospace;
+    --font-serif: 'IBM Plex Serif', Georgia, serif;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body {
+    background: var(--bg-base);
+    color: var(--text);
+    font-family: var(--font-sans);
+    font-size: 14px;
+    line-height: 1.5;
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  body {
+    background-image: radial-gradient(circle, #c8d0e0 1px, transparent 1px);
+    background-size: 28px 28px;
+  }
+
+  .top-bar {
+    border-bottom: 1px solid var(--line);
+    background: rgba(255,255,255,0.96);
+    backdrop-filter: blur(8px);
+    position: sticky;
+    top: 0;
+    z-index: 50;
+  }
+
+  .top-bar-inner {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 18px 32px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 24px;
+  }
+
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+
+  .brand-mark {
+    width: 36px;
+    height: 36px;
+    border: 1px solid var(--accent);
+    background: var(--accent-glow);
+    display: grid;
+    place-items: center;
+    font-family: var(--font-mono);
+    font-weight: 600;
+    color: var(--accent);
+    font-size: 13px;
+    position: relative;
+  }
+
+  .brand-mark::before, .brand-mark::after {
+    content: '';
+    position: absolute;
+    width: 4px;
+    height: 4px;
+    background: var(--accent);
+  }
+  .brand-mark::before { top: -2px; left: -2px; }
+  .brand-mark::after { bottom: -2px; right: -2px; }
+
+  .brand-text { display: flex; flex-direction: column; line-height: 1.1; }
+  .brand-title { font-weight: 600; font-size: 15px; letter-spacing: 0.02em; }
+  .brand-sub { font-family: var(--font-mono); font-size: 11px; color: var(--text-faint); margin-top: 3px; letter-spacing: 0.05em; text-transform: uppercase; }
+
+  .top-meta {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--text-faint);
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+
+  .top-meta span { color: var(--accent); }
+
+  .container {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 32px;
+  }
+
+  .hero {
+    margin-bottom: 40px;
+  }
+
+  .hero h1 {
+    font-family: var(--font-serif);
+    font-weight: 400;
+    font-size: 42px;
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+    margin-bottom: 12px;
+  }
+
+  .hero h1 em {
+    font-style: italic;
+    color: var(--accent);
+  }
+
+  .hero p {
+    color: var(--text-dim);
+    max-width: 720px;
+    font-size: 15px;
+  }
+
+  .step-grid {
+    display: grid;
+    gap: 20px;
+  }
+
+  .step {
+    background: var(--bg-elev);
+    border: 1px solid var(--line);
+    position: relative;
+  }
+
+  .step.locked {
+    opacity: 0.4;
+    pointer-events: none;
+  }
+
+  .step.active {
+    border-color: var(--line-bright);
+    box-shadow: 0 0 0 1px var(--line-bright), 0 8px 32px rgba(0, 0, 0, 0.3);
+  }
+
+  .step-header {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 18px 24px;
+    border-bottom: 1px solid var(--line);
+    background: rgba(20, 40, 63, 0.4);
+  }
+
+  .step-num {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--accent);
+    letter-spacing: 0.1em;
+    border: 1px solid var(--accent-dim);
+    padding: 3px 8px;
+    background: var(--accent-glow);
+  }
+
+  .step-title {
+    font-weight: 500;
+    font-size: 15px;
+    letter-spacing: 0.01em;
+  }
+
+  .step-status {
+    margin-left: auto;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--text-faint);
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+  .step-status.done { color: var(--green); }
+  .step-status.warn { color: var(--amber); }
+  .step-status.err { color: var(--red); }
+
+  .step-body { padding: 24px; }
+
+  /* Drop zone */
+  .drop {
+    border: 1.5px dashed var(--line-bright);
+    background: rgba(20, 40, 63, 0.3);
+    padding: 48px 24px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    position: relative;
+  }
+
+  .drop:hover, .drop.dragging {
+    border-color: var(--accent);
+    background: var(--accent-glow);
+  }
+
+  .drop-icon {
+    width: 48px;
+    height: 48px;
+    margin: 0 auto 16px;
+    border: 1px solid var(--accent-dim);
+    display: grid;
+    place-items: center;
+    color: var(--accent);
+    font-family: var(--font-mono);
+    font-size: 20px;
+  }
+
+  .drop-title { font-size: 16px; font-weight: 500; margin-bottom: 6px; }
+  .drop-sub { color: var(--text-dim); font-size: 13px; }
+  .drop-sub kbd {
+    font-family: var(--font-mono);
+    background: var(--bg-elev-3);
+    padding: 2px 6px;
+    border: 1px solid var(--line);
+    font-size: 11px;
+  }
+
+  .drop input { display: none; }
+
+  .file-info {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr 1fr;
+    gap: 1px;
+    background: var(--line);
+    border: 1px solid var(--line);
+  }
+
+  .info-cell {
+    background: var(--bg-elev);
+    padding: 14px 16px;
+  }
+
+  .info-label {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--text-faint);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-bottom: 4px;
+  }
+
+  .info-value {
+    font-family: var(--font-mono);
+    font-size: 16px;
+    font-weight: 500;
+    color: var(--text);
+  }
+
+  .info-value.accent { color: var(--accent); }
+
+  /* Provider tabs */
+  .provider-tabs {
+    display: flex;
+    gap: 0;
+    border: 1px solid var(--line);
+    background: var(--bg-base);
+    margin-bottom: 20px;
+  }
+
+  .provider-tab {
+    flex: 1;
+    background: transparent;
+    border: none;
+    color: var(--text-dim);
+    padding: 14px 18px;
+    cursor: pointer;
+    font-family: var(--font-sans);
+    font-size: 13px;
+    font-weight: 500;
+    letter-spacing: 0.02em;
+    border-right: 1px solid var(--line);
+    text-align: left;
+    transition: all 0.15s;
+    position: relative;
+  }
+  .provider-tab:last-child { border-right: none; }
+
+  .provider-tab:hover { background: var(--bg-elev-2); color: var(--text); }
+
+  .provider-tab.active {
+    background: var(--bg-elev-3);
+    color: var(--accent);
+    box-shadow: inset 0 -2px 0 var(--accent);
+  }
+
+  .provider-tab .price {
+    display: block;
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--text-faint);
+    margin-top: 3px;
+    letter-spacing: 0.05em;
+  }
+  .provider-tab.active .price { color: var(--accent-dim); }
+
+  /* Form fields */
+  .field-group { display: grid; gap: 16px; }
+
+  .field-row {
+    display: grid;
+    grid-template-columns: 180px 1fr;
+    gap: 20px;
+    align-items: start;
+  }
+
+  .field-label {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--text-dim);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding-top: 10px;
+  }
+
+  .field-label small {
+    display: block;
+    text-transform: none;
+    letter-spacing: 0;
+    color: var(--text-faint);
+    font-size: 11px;
+    margin-top: 3px;
+    font-weight: 400;
+  }
+
+  .input, .select, .textarea {
+    width: 100%;
+    background: var(--bg-base);
+    border: 1px solid var(--line);
+    color: var(--text);
+    padding: 10px 14px;
+    font-family: var(--font-mono);
+    font-size: 13px;
+    transition: border 0.15s;
+  }
+
+  .input:focus, .select:focus, .textarea:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-glow);
+  }
+
+  .textarea { font-family: var(--font-mono); resize: vertical; min-height: 80px; }
+
+  .input-with-action { display: flex; gap: 8px; }
+  .input-with-action .input { flex: 1; }
+
+  /* Buttons */
+  .btn {
+    background: var(--bg-elev-3);
+    border: 1px solid var(--line-bright);
+    color: var(--text);
+    padding: 10px 20px;
+    font-family: var(--font-sans);
+    font-size: 13px;
+    font-weight: 500;
+    letter-spacing: 0.02em;
+    cursor: pointer;
+    transition: all 0.15s;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .btn:hover:not(:disabled) {
+    background: var(--bg-elev-2);
+    border-color: var(--accent-dim);
+  }
+
+  .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  .btn-primary {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: var(--bg-base);
+    font-weight: 600;
+  }
+  .btn-primary:hover:not(:disabled) {
+    background: #5ee5ff;
+    border-color: #5ee5ff;
+  }
+
+  .btn-ghost {
+    background: transparent;
+    border-color: var(--line);
+  }
+  .btn-ghost:hover:not(:disabled) { border-color: var(--line-bright); }
+
+  .btn-danger {
+    background: transparent;
+    border-color: var(--red);
+    color: var(--red);
+  }
+
+  .btn-icon {
+    padding: 8px 10px;
+    font-family: var(--font-mono);
+  }
+
+  .actions { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+  .actions-end { justify-content: flex-end; }
+
+  /* Strings preview */
+  .strings-toolbar {
+    display: flex;
+    gap: 12px;
+    padding: 12px 16px;
+    background: var(--bg-base);
+    border: 1px solid var(--line);
+    border-bottom: none;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+
+  .stat-pill {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--text-dim);
+    background: var(--bg-elev-2);
+    padding: 4px 10px;
+    border: 1px solid var(--line);
+    letter-spacing: 0.05em;
+  }
+  .stat-pill strong { color: var(--accent); font-weight: 600; }
+
+  .filter-input {
+    background: var(--bg-elev);
+    border: 1px solid var(--line);
+    color: var(--text);
+    padding: 6px 10px;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    margin-left: auto;
+    width: 200px;
+  }
+
+  .strings-table {
+    border: 1px solid var(--line);
+    background: var(--bg-base);
+    max-height: 480px;
+    overflow-y: auto;
+    font-family: var(--font-mono);
+    font-size: 12px;
+  }
+
+  .strings-table table { width: 100%; border-collapse: collapse; }
+
+  .strings-table thead {
+    position: sticky;
+    top: 0;
+    background: var(--bg-elev-2);
+    z-index: 1;
+  }
+
+  .strings-table th {
+    text-align: left;
+    padding: 10px 14px;
+    font-weight: 500;
+    color: var(--text-dim);
+    border-bottom: 1px solid var(--line);
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .strings-table td {
+    padding: 8px 14px;
+    border-bottom: 1px solid var(--line);
+    vertical-align: top;
+  }
+
+  .strings-table td.cn { color: var(--text); max-width: 380px; word-wrap: break-word; }
+  .strings-table td.en {
+    color: var(--green);
+    max-width: 380px;
+    word-wrap: break-word;
+  }
+  .strings-table td.en.empty { color: var(--text-faint); font-style: italic; }
+  .strings-table td.en.editing { background: var(--accent-glow); }
+  .strings-table td.idx { color: var(--text-faint); width: 60px; }
+  .strings-table td.count { color: var(--text-faint); width: 60px; text-align: right; }
+
+  .strings-table tr:hover { background: rgba(29,78,216,0.05); }
+
+  .editable-cell {
+    cursor: text;
+    min-height: 1.2em;
+  }
+
+  .editable-cell:hover { background: rgba(0, 212, 255, 0.05); }
+
+  .inline-input {
+    width: 100%;
+    background: var(--bg-elev-3);
+    border: 1px solid var(--accent);
+    color: var(--text);
+    padding: 4px 6px;
+    font-family: var(--font-mono);
+    font-size: 12px;
+  }
+
+  /* Progress */
+  .progress-wrap {
+    margin-top: 16px;
+    padding: 16px;
+    background: var(--bg-base);
+    border: 1px solid var(--line);
+  }
+
+  .progress-bar {
+    height: 4px;
+    background: var(--bg-elev-3);
+    overflow: hidden;
+    margin-bottom: 10px;
+  }
+
+  .progress-fill {
+    height: 100%;
+    background: var(--accent);
+    width: 0%;
+    transition: width 0.3s;
+    box-shadow: 0 0 8px var(--accent-glow);
+  }
+
+  .progress-meta {
+    display: flex;
+    justify-content: space-between;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--text-dim);
+    letter-spacing: 0.05em;
+  }
+
+  .progress-status { color: var(--accent); }
+
+  /* Log */
+  .log {
+    margin-top: 16px;
+    background: var(--bg-base);
+    border: 1px solid var(--line);
+    padding: 12px 16px;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--text-dim);
+    max-height: 160px;
+    overflow-y: auto;
+  }
+
+  .log-line { padding: 2px 0; }
+  .log-line .ts { color: var(--text-faint); margin-right: 8px; }
+  .log-line.info .lvl { color: var(--accent); }
+  .log-line.ok .lvl { color: var(--green); }
+  .log-line.warn .lvl { color: var(--amber); }
+  .log-line.err .lvl { color: var(--red); }
+
+  /* Help blocks */
+  .help {
+    background: rgba(255, 181, 71, 0.06);
+    border-left: 2px solid var(--amber);
+    padding: 12px 16px;
+    margin-top: 12px;
+    font-size: 12px;
+    color: var(--text-dim);
+    line-height: 1.6;
+  }
+  .help strong { color: var(--text); }
+  .help a { color: var(--accent); text-decoration: none; }
+  .help a:hover { text-decoration: underline; }
+  .help code {
+    font-family: var(--font-mono);
+    background: var(--bg-elev-3);
+    padding: 1px 5px;
+    font-size: 11px;
+  }
+
+  /* Download zone */
+  .download-zone {
+    text-align: center;
+    padding: 32px;
+    border: 1px solid var(--green);
+    background: rgba(74, 222, 128, 0.05);
+  }
+
+  .download-zone h3 {
+    font-family: var(--font-serif);
+    font-weight: 400;
+    font-size: 22px;
+    margin-bottom: 8px;
+  }
+
+  .download-zone p {
+    color: var(--text-dim);
+    margin-bottom: 20px;
+  }
+
+  .btn-download {
+    background: var(--green);
+    color: var(--bg-base);
+    border: none;
+    padding: 14px 28px;
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    cursor: pointer;
+    font-family: var(--font-sans);
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .btn-download:hover { background: #6ee895; }
+
+  /* Batch list */
+  .batch-row {
+    display: grid;
+    grid-template-columns: 24px 1fr 90px 100px 130px 90px;
+    gap: 12px;
+    align-items: center;
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--line);
+    font-size: 12px;
+  }
+  .batch-row:last-child { border-bottom: none; }
+  .batch-row:hover { background: rgba(29,78,216,0.04); }
+
+  .batch-icon {
+    font-family: var(--font-mono);
+    font-size: 14px;
+    color: var(--text-faint);
+    text-align: center;
+  }
+  .batch-icon.pdf { color: var(--red); }
+  .batch-icon.xlsx { color: var(--green); }
+
+  .batch-name {
+    font-family: var(--font-mono);
+    color: var(--text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .batch-size, .batch-units {
+    font-family: var(--font-mono);
+    color: var(--text-dim);
+    text-align: right;
+  }
+
+  .batch-status {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--text-faint);
+  }
+  .batch-status.loading { color: var(--amber); }
+  .batch-status.ready { color: var(--text-dim); }
+  .batch-status.translating { color: var(--accent); }
+  .batch-status.done { color: var(--green); }
+  .batch-status.err { color: var(--red); }
+
+  .batch-action {
+    text-align: right;
+  }
+
+  .batch-remove, .batch-download {
+    background: transparent;
+    border: 1px solid var(--line);
+    color: var(--text-dim);
+    padding: 4px 10px;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .batch-remove:hover { border-color: var(--red); color: var(--red); }
+  .batch-download {
+    border-color: var(--green);
+    color: var(--green);
+  }
+  .batch-download:hover { background: var(--green); color: var(--bg-base); }
+
+  .download-summary {
+    background: var(--bg-base);
+    border: 1px solid var(--line);
+    padding: 14px 16px;
+    margin-bottom: 16px;
+  }
+  .download-summary .row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 6px 0;
+    font-family: var(--font-mono);
+    font-size: 12px;
+  }
+  .download-summary .row + .row {
+    border-top: 1px solid var(--line);
+  }
+
+
+  .foot {
+    border-top: 1px solid var(--line);
+    margin-top: 60px;
+    padding: 24px 32px;
+    text-align: center;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--text-faint);
+    letter-spacing: 0.05em;
+  }
+
+  .foot a { color: var(--text-dim); text-decoration: none; }
+  .foot a:hover { color: var(--accent); }
+
+  /* Tab content */
+  .tab-content { display: none; }
+  .tab-content.active { display: block; }
+
+  /* Modal */
+  .modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(17,24,39,0.7);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+    backdrop-filter: blur(4px);
+  }
+  .modal-backdrop.show { display: flex; }
+
+  .modal {
+    background: var(--bg-elev);
+    border: 1px solid var(--line-bright);
+    width: 90%;
+    max-width: 600px;
+    max-height: 80vh;
+    overflow-y: auto;
+  }
+
+  .modal-header {
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--line);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .modal-title { font-weight: 500; }
+  .modal-close { cursor: pointer; color: var(--text-dim); border: none; background: none; font-size: 18px; }
+
+  .modal-body { padding: 20px; }
+
+  /* Responsive */
+  @media (max-width: 768px) {
+    .hero h1 { font-size: 32px; }
+    .field-row { grid-template-columns: 1fr; }
+    .file-info { grid-template-columns: 1fr 1fr; }
+    .container { padding: 20px; }
+    .top-bar-inner { padding: 14px 20px; }
+    .provider-tabs { flex-direction: column; }
+    .provider-tab { border-right: none; border-bottom: 1px solid var(--line); }
+  }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 10px; height: 10px; }
+  ::-webkit-scrollbar-track { background: #eef0f5; }
+  ::-webkit-scrollbar-thumb { background: var(--line-bright); border: 2px solid var(--bg-base); }
+  ::-webkit-scrollbar-thumb:hover { background: var(--accent-dim); }
+
+  /* ── MMC AI Suite Theme Overrides ── */
+  .hero { display:none !important; }
+
+  .page-title-bar {
+    max-width:860px; margin:2rem auto 1.5rem; padding:0 24px;
+  }
+  .page-title-bar h1 {
+    font-size:22px; font-weight:700; color:var(--text);
+    letter-spacing:-.02em; margin-bottom:4px;
+  }
+  .page-title-bar p { font-size:13.5px; color:var(--text-dim); }
+
+  .step-grid { max-width:860px; margin:0 auto; padding:0 24px; }
+
+  .step {
+    background:var(--bg-elev);
+    border:1px solid var(--line);
+    border-radius:12px;
+    box-shadow:0 1px 4px rgba(0,0,0,.04);
+  }
+  .step.locked { opacity:0.5; pointer-events:none; }
+  .step.active { border-color:var(--accent); opacity:1; pointer-events:all; }
+  .step.done   { border-color:var(--green);  opacity:1; pointer-events:all; }
+
+  .step-num {
+    width:26px; height:26px; border-radius:50%;
+    background:var(--line); color:var(--text-dim);
+    font-size:11px; font-weight:700;
+    display:inline-flex; align-items:center; justify-content:center; flex-shrink:0;
+  }
+  .step.active .step-num { background:var(--accent); color:#fff; }
+  .step.done   .step-num { background:var(--green);  color:#fff; }
+
+  .drop {
+    border:2px dashed var(--line); border-radius:10px;
+    padding:32px 20px; background:var(--bg-base);
+    transition:border-color .2s, background .2s;
+  }
+  .drop:hover { border-color:var(--accent); background:var(--accent-glow); }
+
+  .provider-tab .price { display:none !important; }
+
+  .help {
+    font-size:12px !important; color:var(--text-faint) !important;
+    border:none !important; background:none !important; padding:8px 0 0 !important;
+  }
+
+  .container { max-width:860px !important; padding:0 !important; }
+
+  .mmc-nav { display:flex; align-items:center; text-decoration:none; }
+  .mmc-nav img { height:44px; width:auto; object-fit:contain; }
+  .nav-sep { width:1px; height:28px; background:var(--line); margin:0 14px; flex-shrink:0; }
+
+  .mmc-foot {
+    margin-top:3rem; background:#111827; border-top:1px solid #1f2937;
+    padding:1.25rem 2.5rem;
+    display:flex; align-items:center; justify-content:space-between;
+    flex-wrap:wrap; gap:10px;
+  }
+  .mmc-foot span { font-size:12px; color:#6b7280; font-family:var(--font-sans); }
+  .mmc-foot .live { color:#0d9467; font-weight:500; }
+
+</style>
+</head>
+<body>
+
+<header class="top-bar">
+  <div class="top-bar-inner">
+    <a class="mmc-nav" href="index.html">
+      <img src="data:image/jpeg;base64,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" alt="BYD | Mega Motor Co" />
+    </a>
+    <div class="nav-sep"></div>
+    <span class="brand-title" style="font-size:14px;font-weight:600;color:var(--text);">Chinese Document Conversion</span>
+  </div>
+</header>
+
+<main class="container">
+  <div class="page-title-bar">
+    <h1>Chinese → English Document Conversion</h1>
+    <p>Upload your file, select a translation provider, and download the converted document — layout preserved.</p>
+  </div>
+
+  <section class="hero">
+    <h1>Translate <em>Chinese</em> documents,<br>without losing a thing.</h1>
+    <p>Drop in one or more <code style="font-family:var(--font-mono);background:var(--bg-elev-3);padding:1px 6px">.xlsx</code>, <code style="font-family:var(--font-mono);background:var(--bg-elev-3);padding:1px 6px">.docx</code>, or <code style="font-family:var(--font-mono);background:var(--bg-elev-3);padding:1px 6px">.pdf</code> files. Bring your own translation API key. Get back the same documents — every image, formula, table, and layout preserved — with all Chinese text translated to English.</p>
+  </section>
+
+  <div class="step-grid">
+
+    <!-- STEP 1: Upload -->
+    <section class="step active" id="step-1">
+      <div class="step-header">
+        <span class="step-num">01</span>
+        <span class="step-title">Load Excel file</span>
+        <span class="step-status" id="status-1">awaiting input</span>
+      </div>
+      <div class="step-body">
+        <label class="drop" id="drop-zone">
+          <input type="file" id="file-input" accept=".xlsx,.xlsm,.docx,.pdf" multiple>
+          <div class="drop-icon">↓</div>
+          <div class="drop-title">Drop one or more files here</div>
+          <div class="drop-sub">or <kbd>click to browse</kbd> · all files in a batch must be the same format (.xlsx, .docx, or .pdf)</div>
+        </label>
+
+        <div id="file-details" style="display:none; margin-top:20px;">
+          <!-- Batch summary stats -->
+          <div class="file-info">
+            <div class="info-cell">
+              <div class="info-label">Files in batch</div>
+              <div class="info-value accent" id="info-batch-count">—</div>
+            </div>
+            <div class="info-cell">
+              <div class="info-label">Total size</div>
+              <div class="info-value" id="info-size">—</div>
+            </div>
+            <div class="info-cell">
+              <div class="info-label" id="info-units-label">Sheets</div>
+              <div class="info-value accent" id="info-sheets">—</div>
+            </div>
+            <div class="info-cell">
+              <div class="info-label">Unique Chinese strings</div>
+              <div class="info-value accent" id="info-strings">—</div>
+            </div>
+          </div>
+
+          <!-- Per-file list -->
+          <div id="batch-list" style="margin-top:16px; border:1px solid var(--line); background:var(--bg-base); max-height:280px; overflow-y:auto;">
+            <!-- rows injected by JS -->
+          </div>
+
+          <div class="actions" style="margin-top:16px;">
+            <button class="btn btn-ghost" id="btn-add-more">+ Add more files</button>
+            <button class="btn btn-ghost" id="btn-reset">Clear all</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- STEP 2: Translation provider -->
+    <section class="step locked" id="step-2">
+      <div class="step-header">
+        <span class="step-num">02</span>
+        <span class="step-title">Configure translation provider</span>
+        <span class="step-status" id="status-2">locked</span>
+      </div>
+      <div class="step-body">
+        <div class="provider-tabs">
+          <button class="provider-tab active" data-provider="anthropic">
+            Anthropic Claude ★
+            <span class="price">best for technical text · ~$0.02–0.30 per file</span>
+          </button>
+          <button class="provider-tab" data-provider="google">
+            Google Cloud Translation
+            <span class="price">~$20 per 1M chars · most reliable</span>
+          </button>
+          <button class="provider-tab" data-provider="deepl">
+            DeepL API
+            <span class="price">500K chars/mo free · high quality</span>
+          </button>
+          <button class="provider-tab" data-provider="openai">
+            OpenAI (GPT-4o-mini)
+            <span class="price">~$0.15 per 1M tokens · context-aware</span>
+          </button>
+          <button class="provider-tab" data-provider="manual">
+            Manual / Glossary only
+            <span class="price">free · paste translations yourself</span>
+          </button>
+        </div>
+
+        <!-- Anthropic Claude -->
+        <div class="tab-content active" id="tab-anthropic">
+          <div class="field-group">
+            <div class="field-row">
+              <label class="field-label">API Key
+                <small>Anthropic Claude</small>
+              </label>
+              <div class="input-with-action">
+                <input type="password" class="input" id="anthropic-key" placeholder="sk-ant-...">
+                <button class="btn btn-ghost btn-icon" onclick="toggleVisibility('anthropic-key')">show</button>
+              </div>
+            </div>
+            <div class="field-row">
+              <label class="field-label">Model</label>
+              <select class="select" id="anthropic-model" style="max-width:340px;">
+                <option value="claude-haiku-4-5-20251001">Claude Haiku 4.5 — fast & cheap (recommended)</option>
+                <option value="claude-sonnet-4-6">Claude Sonnet 4.6 — higher quality</option>
+                <option value="claude-opus-4-7">Claude Opus 4.7 — best quality, slower</option>
+              </select>
+            </div>
+            <div class="field-row">
+              <label class="field-label">Domain context
+                <small>helps with jargon</small>
+              </label>
+              <textarea class="textarea" id="anthropic-context" placeholder="Describe the document type and any terminology rules.">Translate this entire Excel document from Chinese Simplified to English while maintaining the exact same format.
+
+REQUIREMENTS:
+
+1. Translate ALL Chinese text to English, including:
+   - Sheet name(s)
+   - Headers and titles
+   - Column headers
+   - All cell content (inspection items, procedures, criteria, etc.)
+   - Page headers/footers
+   - Document information (Document No., Issuing Dept., Product Name, etc.)
+
+2. PRESERVE the original format:
+   - Keep all merged cells exactly as they are
+   - Maintain all line breaks within cells
+   - Keep special symbols unchanged (▽, ◇, /, \, etc.)
+   - Preserve all numbers, torque values (N·m), and technical specifications
+   - Keep the same cell structure and layout
+
+3. Technical terms:
+   - Keep model names as-is (e.g., SA3HBX, SA3H, SA3)
+   - Keep station codes as-is (e.g., C04, C09, C20, T-02-01)
+   - Keep document numbers as-is (e.g., FMA-112-D11A, SA3F-5820762)
+   - Keep abbreviations as-is (IP, HVAC, PAD, ECU, NG, OK, N/A)
+   - Translate technical automotive/manufacturing terms accurately
+
+4. Do NOT change:
+   - Numerical values
+   - Units of measurement (N·m, mm, kg, etc.)
+   - Cell positions
+   - Formulas (if any)
+   - Pictures (if any)
+
+STYLE: Use terse imperative voice for work instructions ("Take the part", not "You should take the part"). Match the original style — terse stays terse, formal stays formal.
+
+GLOSSARY: "管梁" → "cross car beam"; "总成" → "assembly"; "工艺卡片" → "process card"; "夹持块" → "clamping block"; "工序号" → "Operation No."; "标准工时" → "Standard Time"; "产品名称" → "Product Name"; "文件编号" → "Document No.".</textarea>
+            </div>
+          </div>
+          <div class="help">
+            <strong>Recommended for your documents.</strong> Claude understands technical context across the whole batch and produces consistent terminology — exactly what you want for manufacturing process cards. Get a key from <a href="https://console.anthropic.com/settings/keys" target="_blank">console.anthropic.com</a>.
+            <br><br>
+            <strong>Note on browser usage:</strong> The Anthropic API requires the <code>anthropic-dangerous-direct-browser-access</code> header to be called from a browser. This tool sets it automatically. Your API key is sent only to <code>api.anthropic.com</code>. For an internal team tool this is fine; do not embed your key in a public-facing site.
+          </div>
+        </div>
+
+        <!-- Google -->
+        <div class="tab-content" id="tab-google">
+          <div class="field-group">
+            <div class="field-row">
+              <label class="field-label">API Key
+                <small>Google Cloud Translation</small>
+              </label>
+              <div class="input-with-action">
+                <input type="password" class="input" id="google-key" placeholder="AIzaSy...">
+                <button class="btn btn-ghost btn-icon" onclick="toggleVisibility('google-key')">show</button>
+              </div>
+            </div>
+          </div>
+          <div class="help">
+            <strong>How to get a key:</strong> Visit <a href="https://console.cloud.google.com/apis/credentials" target="_blank">Google Cloud Console</a> → Create credentials → API key. Enable the <em>Cloud Translation API</em>. The free tier covers 500,000 characters/month; after that ~$20 per million characters. Your key is sent only to <code>translation.googleapis.com</code> directly from your browser — it never leaves your machine through any other route.
+          </div>
+        </div>
+
+        <!-- DeepL -->
+        <div class="tab-content" id="tab-deepl">
+          <div class="field-group">
+            <div class="field-row">
+              <label class="field-label">API Key
+                <small>DeepL Free or Pro</small>
+              </label>
+              <div class="input-with-action">
+                <input type="password" class="input" id="deepl-key" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx:fx">
+                <button class="btn btn-ghost btn-icon" onclick="toggleVisibility('deepl-key')">show</button>
+              </div>
+            </div>
+            <div class="field-row">
+              <label class="field-label">Plan</label>
+              <select class="select" id="deepl-plan" style="max-width:240px;">
+                <option value="free">Free (api-free.deepl.com)</option>
+                <option value="pro">Pro (api.deepl.com)</option>
+              </select>
+            </div>
+          </div>
+          <div class="help">
+            <strong>Get a key:</strong> Sign up at <a href="https://www.deepl.com/pro-api" target="_blank">deepl.com/pro-api</a>. Free keys end in <code>:fx</code> — make sure to pick "Free" if so. DeepL produces noticeably better Chinese→English translations for technical content than Google in many cases.
+          </div>
+        </div>
+
+        <!-- OpenAI -->
+        <div class="tab-content" id="tab-openai">
+          <div class="field-group">
+            <div class="field-row">
+              <label class="field-label">API Key
+                <small>OpenAI</small>
+              </label>
+              <div class="input-with-action">
+                <input type="password" class="input" id="openai-key" placeholder="sk-...">
+                <button class="btn btn-ghost btn-icon" onclick="toggleVisibility('openai-key')">show</button>
+              </div>
+            </div>
+            <div class="field-row">
+              <label class="field-label">Model</label>
+              <select class="select" id="openai-model" style="max-width:240px;">
+                <option value="gpt-4o-mini">gpt-4o-mini (fast, cheap)</option>
+                <option value="gpt-4o">gpt-4o (higher quality)</option>
+              </select>
+            </div>
+            <div class="field-row">
+              <label class="field-label">Domain context
+                <small>helps with jargon</small>
+              </label>
+              <textarea class="textarea" id="openai-context" placeholder="e.g. Automotive manufacturing process documentation. Translate technical assembly terms accurately. SA3HBX is a vehicle model code — keep it as-is.">Automotive / industrial manufacturing process documentation. Translate technical assembly terms accurately. Keep model codes, part numbers, and abbreviations (e.g. SA3HBX, IP, HVAC, PAD) as-is.</textarea>
+            </div>
+          </div>
+          <div class="help">
+            <strong>Best for technical documents.</strong> Get a key from <a href="https://platform.openai.com/api-keys" target="_blank">platform.openai.com/api-keys</a>. The model context above is included with every batch — describe your domain so technical terms stay accurate. gpt-4o-mini is around $0.15/M input tokens; a typical 50 MB Excel translates for well under $1.
+          </div>
+        </div>
+
+        <!-- Manual -->
+        <div class="tab-content" id="tab-manual">
+          <div class="help" style="border-left-color:var(--accent); background:var(--accent-glow);">
+            <strong>Manual mode</strong> uses only your imported glossary (Step 3) plus any inline edits. No API calls are made. Strings without a glossary entry stay in Chinese in the output. Useful when you have a pre-built term list and want zero external traffic.
+          </div>
+        </div>
+
+        <div class="actions" style="margin-top:24px;">
+          <button class="btn" id="btn-test-api">Test connection</button>
+          <span id="test-result" style="font-family:var(--font-mono); font-size:12px; color:var(--text-faint);"></span>
+        </div>
+      </div>
+    </section>
+
+    <!-- STEP 3: Strings preview / glossary -->
+    <section class="step locked" id="step-3">
+      <div class="step-header">
+        <span class="step-num">03</span>
+        <span class="step-title">Review strings & glossary</span>
+        <span class="step-status" id="status-3">locked</span>
+      </div>
+      <div class="step-body">
+
+        <div class="actions" style="margin-bottom:16px;">
+          <button class="btn btn-ghost" id="btn-import-glossary">Import glossary (.json)</button>
+          <button class="btn btn-ghost" id="btn-export-glossary">Export current as glossary</button>
+          <input type="file" id="glossary-input" accept=".json" style="display:none;">
+        </div>
+
+        <div class="strings-toolbar">
+          <span class="stat-pill">Unique <strong id="stat-unique">0</strong></span>
+          <span class="stat-pill">Total chars <strong id="stat-chars">0</strong></span>
+          <span class="stat-pill">From glossary <strong id="stat-glossary">0</strong></span>
+          <span class="stat-pill">Pending <strong id="stat-pending">0</strong></span>
+          <input type="text" class="filter-input" id="filter" placeholder="filter strings...">
+        </div>
+
+        <div class="strings-table">
+          <table>
+            <thead>
+              <tr>
+                <th style="width:60px;">#</th>
+                <th>Chinese (source)</th>
+                <th>English (translation)</th>
+                <th style="width:80px;text-align:right;">used</th>
+              </tr>
+            </thead>
+            <tbody id="strings-tbody"></tbody>
+          </table>
+        </div>
+
+        <div class="help">
+          <strong>Tip:</strong> Click any English cell to edit it manually before translation. Edits persist through the translation step (already-filled cells aren't re-translated). After a successful run, export your translations as a glossary to reuse on future documents — perfect for keeping terminology consistent across a document set.
+        </div>
+
+      </div>
+    </section>
+
+    <!-- STEP 4: Run translation -->
+    <section class="step locked" id="step-4">
+      <div class="step-header">
+        <span class="step-num">04</span>
+        <span class="step-title">Run translation</span>
+        <span class="step-status" id="status-4">locked</span>
+      </div>
+      <div class="step-body">
+
+        <div style="background:var(--bg-base);border:1px solid var(--line);padding:16px;margin-bottom:20px;" id="layout-panel">
+          <div style="font-family:var(--font-mono);font-size:11px;color:var(--text-dim);letter-spacing:0.08em;text-transform:uppercase;margin-bottom:12px;">Layout adjustments
+            <small style="text-transform:none;letter-spacing:0;color:var(--text-faint);font-size:11px;display:block;margin-top:3px;">English text is wider than Chinese. These options give it room to fit.</small>
+          </div>
+
+          <!-- Excel-specific layout options -->
+          <div id="layout-excel-opts" style="display:flex;gap:24px;flex-wrap:wrap;align-items:center;">
+            <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;">
+              <input type="checkbox" id="opt-resize-rows" checked style="cursor:pointer;">
+              Enlarge row heights
+              <select class="select" id="opt-row-mult" style="width:90px;padding:4px 8px;font-size:12px;">
+                <option value="1.0">×1.0 (strict)</option>
+                <option value="1.3">×1.3</option>
+                <option value="1.6" selected>×1.6</option>
+                <option value="2.0">×2.0</option>
+                <option value="2.5">×2.5</option>
+              </select>
+            </label>
+            <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;">
+              <input type="checkbox" id="opt-resize-cols" checked style="cursor:pointer;">
+              Widen columns
+              <select class="select" id="opt-col-mult" style="width:90px;padding:4px 8px;font-size:12px;">
+                <option value="1.0">×1.0 (strict)</option>
+                <option value="1.2">×1.2</option>
+                <option value="1.4" selected>×1.4</option>
+                <option value="1.6">×1.6</option>
+                <option value="1.8">×1.8</option>
+              </select>
+            </label>
+            <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;">
+              <input type="checkbox" id="opt-wrap-text" checked style="cursor:pointer;">
+              Force text wrap on cells
+            </label>
+            <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;">
+              <input type="checkbox" id="opt-shrink-font" style="cursor:pointer;">
+              Shrink font on tight cells
+            </label>
+            <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;" title="If the original file uses Chinese-only fonts (SimSun, SimHei, etc.), replace them with an English-capable font for consistent display.">
+              <input type="checkbox" id="opt-replace-font" checked style="cursor:pointer;">
+              Replace Chinese fonts with
+              <select class="select" id="opt-font-name" style="width:110px;padding:4px 8px;font-size:12px;">
+                <option value="Calibri" selected>Calibri</option>
+                <option value="Arial">Arial</option>
+                <option value="Segoe UI">Segoe UI</option>
+                <option value="Times New Roman">Times</option>
+              </select>
+            </label>
+            <button class="btn btn-ghost" id="btn-strict-mode" type="button" style="padding:4px 10px;font-size:11px;" title="Set everything to preserve the exact original layout (no row/column resizing, no font changes).">⎘ Strict layout mode</button>
+          </div>
+
+          <!-- PDF-specific layout options -->
+          <div id="layout-pdf-opts" style="display:none;flex-wrap:wrap;gap:24px;align-items:center;">
+            <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;">
+              <input type="checkbox" id="opt-pdf-shrink" checked style="cursor:pointer;">
+              Auto-shrink English text to fit
+              <select class="select" id="opt-pdf-min-scale" style="width:120px;padding:4px 8px;font-size:12px;" title="Minimum font size as % of original">
+                <option value="0.45">min 45%</option>
+                <option value="0.55" selected>min 55%</option>
+                <option value="0.65">min 65%</option>
+                <option value="0.75">min 75%</option>
+              </select>
+            </label>
+            <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;">
+              <input type="checkbox" id="opt-pdf-wrap" checked style="cursor:pointer;">
+              Allow text to wrap to extra lines
+            </label>
+            <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;">
+              <input type="checkbox" id="opt-pdf-allow-overflow" style="cursor:pointer;">
+              Allow horizontal overflow (when shrinking would be too small)
+            </label>
+            <div style="display:flex;align-items:center;gap:8px;font-size:13px;">
+              <span style="color:var(--text-dim);">Pages per chunk:</span>
+              <select class="select" id="opt-pdf-chunk" style="width:90px;padding:4px 8px;font-size:12px;">
+                <option value="20">20</option>
+                <option value="50" selected>50</option>
+                <option value="100">100</option>
+              </select>
+              <span style="color:var(--text-faint);font-size:11px;">smaller = less memory, slower; larger = faster but riskier on big files</span>
+            </div>
+          </div>
+
+          <!-- Word-specific layout options -->
+          <div id="layout-docx-opts" style="display:none;flex-wrap:wrap;gap:24px;align-items:center;">
+            <div style="color:var(--text-dim);font-size:12px;line-height:1.7;">
+              Word documents auto-reflow paragraph text, so English length differences are handled naturally — there's nothing to configure. Tables, fonts, images, headers and footers will all be preserved.
+            </div>
+          </div>
+        </div>
+
+        <div class="actions">
+          <button class="btn btn-primary" id="btn-translate">▶  Translate pending strings</button>
+          <button class="btn btn-danger" id="btn-cancel" style="display:none;">Cancel</button>
+        </div>
+
+        <div class="progress-wrap" id="progress-wrap" style="display:none;">
+          <div class="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
+          <div class="progress-meta">
+            <span id="progress-status" class="progress-status">—</span>
+            <span id="progress-counts">0 / 0</span>
+          </div>
+        </div>
+
+        <div class="log" id="log" style="display:none;"></div>
+      </div>
+    </section>
+
+    <!-- STEP 5: Download -->
+    <section class="step locked" id="step-5">
+      <div class="step-header">
+        <span class="step-num">05</span>
+        <span class="step-title">Download translated files</span>
+        <span class="step-status" id="status-5">locked</span>
+      </div>
+      <div class="step-body">
+        <div class="download-summary" id="download-summary">
+          <!-- per-file list with individual download buttons, injected by JS -->
+        </div>
+        <div class="download-zone">
+          <h3>Translated files ready.</h3>
+          <p>Download all at once as a ZIP, or grab individual files from the list above as they finished.</p>
+          <button class="btn-download" id="btn-download-zip">↓  Download all as ZIP</button>
+          <div style="margin-top:16px; font-family:var(--font-mono); font-size:11px; color:var(--text-faint);">
+            <span id="download-name">—</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </div>
+</main>
+
+<footer class="mmc-foot">
+  <img src="data:image/jpeg;base64,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" alt="BYD | Mega Motor Co"
+       style="height:34px;width:auto;object-fit:contain;filter:invert(1) brightness(2);" />
+  <span>MMC AI Suite &nbsp;·&nbsp; © 2026 Mega Motor Company &nbsp;·&nbsp; Runs entirely in your browser</span>
+  <span class="live">● All systems operational</span>
+</footer>
+
+<!-- About modal -->
+<div class="modal-backdrop" id="modal-about">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">About Document Translator</span>
+      <button class="modal-close" onclick="document.getElementById('modal-about').classList.remove('show')">✕</button>
+    </div>
+    <div class="modal-body">
+      <p style="margin-bottom:14px;">This tool translates Chinese text inside <code>.xlsx</code> workbooks, <code>.docx</code> documents, and <code>.pdf</code> files while preserving the original layout as faithfully as possible.</p>
+      <p style="margin-bottom:14px;"><strong>Excel and Word:</strong> The file is unzipped, text strings inside the XML parts are translated via the chosen API, and the file is rezipped with translations swapped in. Images, formulas (Excel), tables, formatting, headers, footers, comments — everything else passes through untouched. Word reflows English text in paragraphs automatically, so length differences are handled gracefully.</p>
+      <p style="margin-bottom:14px;"><strong>PDF:</strong> The PDF is parsed using PDF.js to extract Chinese text fragments along with their exact positions and font sizes. Translations are then drawn using pdf-lib at the original coordinates, with auto-shrinking and optional wrapping when English text is too long for its original space. All images, vector graphics, and table structure remain in place.</p>
+      <p style="margin-bottom:14px;"><strong>Privacy:</strong> Your file never leaves your browser. Only the extracted text strings are sent to your chosen translation provider, using your own API key.</p>
+      <p style="margin-bottom:14px;"><strong>Performance notes:</strong> PDFs over ~50 MB or ~200 pages may be slow to process and require significant browser memory. For very large PDFs the chunk size in Step 4 controls memory usage — smaller chunks are slower but safer.</p>
+      <p><strong>Limitations:</strong> Text rendered <em>inside images</em> (e.g. callouts on a JPEG) is not translated — that requires OCR. PDF subset fonts are replaced with Helvetica for English text, so the typeface may not match the original exactly. Vertical text and complex right-to-left text are not specifically handled.</p>
+    </div>
+  </div>
+</div>
+
+<script>
+// =============================================================
+// State
+// =============================================================
+const state = {
+  // Batch — all files share the same fileType (Excel-only or PDF-only)
+  fileType: null,                // 'xlsx' or 'pdf' once batch is non-empty
+  batch: [],                     // see batchEntryShape() below
+  /*
+   * batchEntryShape:
+   *   id: unique id (1, 2, 3, ...)
+   *   file: original File object
+   *   buffer: ArrayBuffer of file contents
+   *   name: original filename
+   *   size: bytes
+   *
+   *   // For Excel:
+   *   zip: JSZip instance
+   *   sheetCount, sharedStringsXml, sheetXmlPaths, drawingXmlPaths,
+   *   inlineSheetXmls, drawingXmls
+   *
+   *   // For PDF:
+   *   pdfPageCount: number
+   *   pdfSpans: array of {pageIndex, text, x, yBaseline, width, height, fontSize, pageWidth, pageHeight}
+   *
+   *   // Per-file string locations: list of {stringId, type, ...locationDetails}
+   *   // (Same string may appear in multiple files; the global strings array
+   *   // is deduplicated and shared.)
+   *   localStringRefs: array
+   *
+   *   // Result
+   *   status: 'loading' | 'ready' | 'translating' | 'building' | 'done' | 'error'
+   *   error: string|null
+   *   translatedBlob: Blob|null
+   *   translatedName: string|null
+   */
+
+  // Shared dedup'd strings store (translations reused across all batch files)
+  // each entry: { id, text, translation, fromGlossary, count, locations: [{fileId, ...}] }
+  strings: [],
+  stringIndex: new Map(),
+
+  // Provider / runtime
+  provider: 'anthropic',
+  cancelRequested: false,
+  isTranslating: false,
+  isBuilding: false,
+};
+
+// Generate unique batch entry IDs
+let _nextBatchId = 1;
+function newBatchId() { return _nextBatchId++; }
+
+// =============================================================
+// DOM helpers
+// =============================================================
+const $ = id => document.getElementById(id);
+const $$ = s => document.querySelectorAll(s);
+
+function setStatus(stepNum, text, kind='') {
+  const el = $('status-' + stepNum);
+  el.textContent = text;
+  el.className = 'step-status ' + kind;
+}
+
+function unlockStep(stepNum) {
+  const step = $('step-' + stepNum);
+  step.classList.remove('locked');
+  step.classList.add('active');
+}
+
+function lockStep(stepNum) {
+  const step = $('step-' + stepNum);
+  step.classList.add('locked');
+  step.classList.remove('active');
+}
+
+function fmtBytes(bytes) {
+  if (bytes < 1024) return bytes + ' B';
+  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+  return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+}
+
+function log(msg, kind='info') {
+  const logEl = $('log');
+  logEl.style.display = 'block';
+  const ts = new Date().toLocaleTimeString();
+  const line = document.createElement('div');
+  line.className = 'log-line ' + kind;
+  line.innerHTML = `<span class="ts">${ts}</span><span class="lvl">[${kind.toUpperCase()}]</span> ${escapeHtml(msg)}`;
+  logEl.appendChild(line);
+  logEl.scrollTop = logEl.scrollHeight;
+}
+
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]);
+}
+
+function toggleVisibility(id) {
+  const el = $(id);
+  el.type = el.type === 'password' ? 'text' : 'password';
+}
+
+// =============================================================
+// File loading
+// =============================================================
+const dropZone = $('drop-zone');
+const fileInput = $('file-input');
+
+['dragenter', 'dragover'].forEach(ev => {
+  dropZone.addEventListener(ev, e => {
+    e.preventDefault();
+    e.stopPropagation();
+    dropZone.classList.add('dragging');
+  });
+});
+['dragleave', 'drop'].forEach(ev => {
+  dropZone.addEventListener(ev, e => {
+    e.preventDefault();
+    e.stopPropagation();
+    dropZone.classList.remove('dragging');
+  });
+});
+dropZone.addEventListener('drop', e => {
+  if (e.dataTransfer.files.length) {
+    handleFiles(Array.from(e.dataTransfer.files));
+  }
+});
+fileInput.addEventListener('change', e => {
+  if (e.target.files.length) {
+    handleFiles(Array.from(e.target.files));
+    // Reset so the same file can be re-selected after removal
+    e.target.value = '';
+  }
+});
+
+$('btn-reset').addEventListener('click', () => { resetAll(); });
+$('btn-add-more').addEventListener('click', () => { fileInput.click(); });
+
+// Strict layout mode: one-click preset for "exact original layout"
+const strictBtn = $('btn-strict-mode');
+if (strictBtn) {
+  strictBtn.addEventListener('click', () => {
+    $('opt-resize-rows').checked = false;
+    $('opt-resize-cols').checked = false;
+    $('opt-wrap-text').checked = false;
+    $('opt-shrink-font').checked = true;       // shrink lets oversized text fit
+    $('opt-replace-font').checked = false;     // keep original fonts
+    $('opt-row-mult').value = '1.0';
+    $('opt-col-mult').value = '1.0';
+    log('Strict layout mode applied — rows/columns unchanged, text shrinks to fit, original fonts preserved.', 'info');
+  });
+}
+
+function resetAll() {
+  state.fileType = null;
+  state.batch = [];
+  state.strings = [];
+  state.stringIndex.clear();
+  state.cancelRequested = false;
+  state.isTranslating = false;
+  state.isBuilding = false;
+  fileInput.value = '';
+  $('file-details').style.display = 'none';
+  $('progress-wrap').style.display = 'none';
+  $('log').style.display = 'none';
+  $('log').innerHTML = '';
+  setStatus(1, 'awaiting input');
+  for (let i = 2; i <= 5; i++) lockStep(i);
+  $('step-1').classList.add('active');
+  $('layout-excel-opts').style.display = 'flex';
+  $('layout-pdf-opts').style.display = 'none';
+  $('layout-docx-opts').style.display = 'none';
+  renderBatchList();
+  renderStrings();
+}
+
+function detectFileType(file) {
+  const name = file.name.toLowerCase();
+  if (name.match(/\.xls[xm]$/)) return 'xlsx';
+  if (name.endsWith('.docx')) return 'docx';
+  if (name.endsWith('.pdf')) return 'pdf';
+  return null;
+}
+
+/**
+ * Add one or more files to the batch. Same-format constraint: if the batch
+ * already has Excel files, only Excel is accepted (and vice versa).
+ */
+async function handleFiles(files) {
+  // Validate types and same-format constraint
+  const accepted = [];
+  const rejected = [];
+  for (const f of files) {
+    const t = detectFileType(f);
+    if (!t) { rejected.push(`${f.name}: unsupported type`); continue; }
+    if (state.fileType && t !== state.fileType) {
+      rejected.push(`${f.name}: type ${t} doesn't match batch type ${state.fileType}`);
+      continue;
+    }
+    accepted.push({ file: f, type: t });
+  }
+
+  if (rejected.length) {
+    alert('Some files were not added:\n\n' + rejected.join('\n') +
+          '\n\nAll files in a batch must be the same type (.xlsx or .pdf).');
+    if (!accepted.length) return;
+  }
+
+  // Set batch type from first accepted file
+  if (!state.fileType) {
+    state.fileType = accepted[0].type;
+    if (state.fileType === 'xlsx') {
+      $('layout-excel-opts').style.display = 'flex';
+      $('layout-pdf-opts').style.display = 'none';
+      $('layout-docx-opts').style.display = 'none';
+      $('info-units-label').textContent = 'Total sheets';
+    } else if (state.fileType === 'docx') {
+      $('layout-excel-opts').style.display = 'none';
+      $('layout-pdf-opts').style.display = 'none';
+      $('layout-docx-opts').style.display = 'flex';
+      $('info-units-label').textContent = 'Total paragraphs';
+    } else {
+      $('layout-excel-opts').style.display = 'none';
+      $('layout-pdf-opts').style.display = 'flex';
+      $('layout-docx-opts').style.display = 'none';
+      $('info-units-label').textContent = 'Total pages';
+    }
+  }
+
+  setStatus(1, `loading ${accepted.length} file(s)...`, 'warn');
+
+  // Load each file sequentially (parallel could exhaust memory on big files)
+  for (const item of accepted) {
+    const entry = {
+      id: newBatchId(),
+      file: item.file,
+      buffer: null,
+      name: item.file.name,
+      size: item.file.size,
+      type: item.type,
+      status: 'loading',
+      error: null,
+      translatedBlob: null,
+      translatedName: null,
+      localStringRefs: [],
+      // format-specific fields populated below
+    };
+    state.batch.push(entry);
+    renderBatchList();
+
+    try {
+      entry.buffer = await item.file.arrayBuffer();
+      if (item.type === 'xlsx') {
+        await loadExcelIntoEntry(entry);
+      } else if (item.type === 'docx') {
+        await loadDocxIntoEntry(entry);
+      } else {
+        await loadPdfIntoEntry(entry);
+      }
+      entry.status = 'ready';
+    } catch (e) {
+      console.error(e);
+      entry.status = 'error';
+      entry.error = e.message || String(e);
+      log(`Failed to load ${entry.name}: ${entry.error}`, 'err');
+    }
+    renderBatchList();
+    updateBatchSummary();
+  }
+
+  setStatus(1, `loaded · ${state.batch.filter(e => e.status === 'ready').length} of ${state.batch.length} files`, 'done');
+  unlockStep(2);
+  unlockStep(3);
+  setStatus(2, 'pending key', 'warn');
+  setStatus(3, 'review', 'warn');
+  $('file-details').style.display = 'block';
+  renderStrings();
+}
+
+/**
+ * Add a string to the global dedup'd table, recording where it came from.
+ * Returns the string entry id.
+ */
+function addOrMergeString(text, fileId, location) {
+  if (state.stringIndex.has(text)) {
+    const idx = state.stringIndex.get(text);
+    const s = state.strings[idx];
+    s.count++;
+    s.locations.push({ fileId, ...location });
+    return s.id;
+  } else {
+    const idx = state.strings.length;
+    state.stringIndex.set(text, idx);
+    state.strings.push({
+      id: idx,
+      text,
+      translation: '',
+      fromGlossary: false,
+      count: 1,
+      locations: [{ fileId, ...location }],
+    });
+    return idx;
+  }
+}
+
+async function loadExcelIntoEntry(entry) {
+  const zip = await JSZip.loadAsync(entry.buffer);
+  entry.zip = zip;
+
+  const sheetFiles = Object.keys(zip.files).filter(p => /^xl\/worksheets\/sheet\d+\.xml$/.test(p));
+  entry.sheetCount = sheetFiles.length;
+  entry.sheetXmlPaths = sheetFiles;
+  entry.drawingXmlPaths = Object.keys(zip.files).filter(p => /^xl\/drawings\/drawing\d+\.xml$/.test(p));
+
+  const ssFile = zip.file('xl/sharedStrings.xml');
+  entry.sharedStringsXml = ssFile ? await ssFile.async('string') : '';
+
+  // Extract workbook.xml — contains sheet names (tab labels)
+  const wbFile = zip.file('xl/workbook.xml');
+  entry.workbookXml = wbFile ? await wbFile.async('string') : '';
+  if (entry.workbookXml) {
+    // <sheet name="..." sheetId="..." r:id="..."/>
+    const sheetTagRe = /<sheet\s+[^>]*name="([^"]*)"/g;
+    let sm, sIdx = 0;
+    while ((sm = sheetTagRe.exec(entry.workbookXml)) !== null) {
+      const decoded = decodeXmlEntities(sm[1]);
+      if (hasChineseChars(decoded)) {
+        addOrMergeString(decoded, entry.id, { type: 'sheetName', sheetIndex: sIdx });
+      }
+      sIdx++;
+    }
+  }
+
+  // Extract sharedStrings <t> tags
+  if (entry.sharedStringsXml) {
+    const siRegex = /<si\b[^>]*>([\s\S]*?)<\/si>/g;
+    let siMatch, siIndex = 0;
+    while ((siMatch = siRegex.exec(entry.sharedStringsXml)) !== null) {
+      const tRegex = /<t\b([^>]*)>([\s\S]*?)<\/t>/g;
+      let tMatch, tIndex = 0;
+      while ((tMatch = tRegex.exec(siMatch[1])) !== null) {
+        const decoded = decodeXmlEntities(tMatch[2]);
+        if (hasChineseChars(decoded)) {
+          addOrMergeString(decoded, entry.id, { type: 'sharedString', siIndex, tIndex });
+        }
+        tIndex++;
+      }
+      siIndex++;
+    }
+  }
+
+  // Inline strings + headers/footers in sheet XMLs
+  entry.inlineSheetXmls = {};
+  for (const path of entry.sheetXmlPaths) {
+    const xml = await zip.file(path).async('string');
+    entry.inlineSheetXmls[path] = { original: xml, hasInline: false, hasHeaderFooter: false };
+
+    // Inline cell strings
+    const isRegex = /<is\b[^>]*>([\s\S]*?)<\/is>/g;
+    let isMatch, isIdx = 0;
+    while ((isMatch = isRegex.exec(xml)) !== null) {
+      const tRegex = /<t\b([^>]*)>([\s\S]*?)<\/t>/g;
+      let tMatch, tIdx = 0;
+      while ((tMatch = tRegex.exec(isMatch[1])) !== null) {
+        const decoded = decodeXmlEntities(tMatch[2]);
+        if (hasChineseChars(decoded)) {
+          entry.inlineSheetXmls[path].hasInline = true;
+          addOrMergeString(decoded, entry.id, { type: 'inlineSheet', path, isIndex: isIdx, tIndex: tIdx });
+        }
+        tIdx++;
+      }
+      isIdx++;
+    }
+
+    // Page headers/footers (printed page header/footer)
+    const hfTags = ['oddHeader', 'oddFooter', 'evenHeader', 'evenFooter', 'firstHeader', 'firstFooter'];
+    for (const tag of hfTags) {
+      const hfRe = new RegExp('<' + tag + '>([\\s\\S]*?)<\\/' + tag + '>', 'g');
+      let hm;
+      while ((hm = hfRe.exec(xml)) !== null) {
+        const content = decodeXmlEntities(hm[1]);
+        if (hasChineseChars(content)) {
+          entry.inlineSheetXmls[path].hasHeaderFooter = true;
+          addOrMergeString(content, entry.id, { type: 'headerFooter', path, tag });
+        }
+      }
+    }
+  }
+
+  // Drawing files (shape labels, image callouts)
+  entry.drawingXmls = {};
+  for (const path of entry.drawingXmlPaths) {
+    const xml = await zip.file(path).async('string');
+    entry.drawingXmls[path] = { original: xml, hasChinese: false };
+    const aTRegex = /<a:t\b[^>]*>([\s\S]*?)<\/a:t>/g;
+    let m, atIdx = 0;
+    while ((m = aTRegex.exec(xml)) !== null) {
+      const decoded = decodeXmlEntities(m[1]);
+      if (hasChineseChars(decoded)) {
+        entry.drawingXmls[path].hasChinese = true;
+        addOrMergeString(decoded, entry.id, { type: 'drawing', path, atIndex: atIdx });
+      }
+      atIdx++;
+    }
+  }
+}
+
+async function loadPdfIntoEntry(entry) {
+  if (typeof pdfjsLib === 'undefined') {
+    throw new Error('PDF.js library not loaded — check your internet connection.');
+  }
+  const u8 = new Uint8Array(entry.buffer.slice(0));
+  const loadingTask = pdfjsLib.getDocument({ data: u8 });
+  const pdfDoc = await loadingTask.promise;
+  entry.pdfPageCount = pdfDoc.numPages;
+  log(`${entry.name}: ${pdfDoc.numPages} pages — extracting Chinese text...`, 'info');
+
+  const allSpans = [];
+  for (let pageIndex = 0; pageIndex < pdfDoc.numPages; pageIndex++) {
+    const page = await pdfDoc.getPage(pageIndex + 1);
+    const viewport = page.getViewport({ scale: 1.0 });
+    const textContent = await page.getTextContent();
+    for (const item of textContent.items) {
+      if (!item.str || !hasChineseChars(item.str)) continue;
+      const tx = item.transform;
+      const fontSize = Math.hypot(tx[2], tx[3]) || Math.abs(tx[3]) || 10;
+      allSpans.push({
+        pageIndex,
+        text: item.str,
+        x: tx[4],
+        yBaseline: tx[5],
+        width: item.width,
+        height: item.height || fontSize,
+        fontSize,
+        pageWidth: viewport.width,
+        pageHeight: viewport.height,
+      });
+    }
+    page.cleanup();
+    if ((pageIndex + 1) % 100 === 0) {
+      log(`  page ${pageIndex + 1} / ${pdfDoc.numPages}`, 'info');
+      await new Promise(r => setTimeout(r, 0));
+    }
+  }
+  entry.pdfSpans = allSpans;
+
+  // Add each span to the global dedup'd strings table
+  for (let i = 0; i < allSpans.length; i++) {
+    addOrMergeString(allSpans[i].text, entry.id, { type: 'pdf', spanIndex: i });
+  }
+
+  await pdfDoc.destroy();
+  log(`  ${entry.name}: ${allSpans.length.toLocaleString()} fragments extracted`, 'ok');
+}
+
+async function loadDocxIntoEntry(entry) {
+  // .docx is a ZIP archive of XML files, similar to .xlsx
+  // Text we care about lives in <w:t>...</w:t> tags inside several files:
+  //   word/document.xml         (main document body)
+  //   word/header*.xml          (page headers)
+  //   word/footer*.xml          (page footers)
+  //   word/comments.xml         (review comments)
+  //   word/footnotes.xml        (footnotes)
+  //   word/endnotes.xml         (endnotes)
+  const zip = await JSZip.loadAsync(entry.buffer);
+  entry.zip = zip;
+
+  // Collect every XML file that can contain w:t text
+  const xmlPaths = Object.keys(zip.files).filter(p =>
+    p === 'word/document.xml' ||
+    /^word\/(header|footer|comments|footnotes|endnotes)\d*\.xml$/.test(p)
+  );
+  entry.docxXmlPaths = xmlPaths;
+  entry.docxXmls = {};   // path -> { original, hasChinese }
+  entry.paragraphCount = 0;
+
+  for (const path of xmlPaths) {
+    const xml = await zip.file(path).async('string');
+    entry.docxXmls[path] = { original: xml, hasChinese: false };
+
+    // Count paragraphs in the main document for the stat
+    if (path === 'word/document.xml') {
+      const pMatches = xml.match(/<w:p\b/g);
+      entry.paragraphCount = pMatches ? pMatches.length : 0;
+    }
+
+    // Find all <w:t> tags. They may be <w:t> or <w:t xml:space="preserve">
+    const tRegex = /<w:t\b([^>]*)>([\s\S]*?)<\/w:t>/g;
+    let m, idx = 0;
+    while ((m = tRegex.exec(xml)) !== null) {
+      const decoded = decodeXmlEntities(m[2]);
+      if (hasChineseChars(decoded)) {
+        entry.docxXmls[path].hasChinese = true;
+        addOrMergeString(decoded, entry.id, { type: 'docx', path, tIndex: idx });
+      }
+      idx++;
+    }
+  }
+  log(`  ${entry.name}: ${entry.paragraphCount} paragraphs, ${xmlPaths.length} XML parts`, 'ok');
+}
+
+/**
+ * Re-render the batch list panel.
+ */
+function renderBatchList() {
+  const list = $('batch-list');
+  if (state.batch.length === 0) {
+    list.innerHTML = '<div style="padding:20px;text-align:center;color:var(--text-faint);font-size:12px;">No files loaded</div>';
+    return;
+  }
+  list.innerHTML = '';
+  for (const entry of state.batch) {
+    const row = document.createElement('div');
+    row.className = 'batch-row';
+    const ext = entry.type;
+
+    let units = '—';
+    if (entry.status === 'ready' || entry.status === 'translating' ||
+        entry.status === 'building' || entry.status === 'done') {
+      if (ext === 'xlsx' && entry.sheetCount) units = `${entry.sheetCount} sheets`;
+      else if (ext === 'docx' && entry.paragraphCount) units = `${entry.paragraphCount} paragraphs`;
+      else if (ext === 'pdf' && entry.pdfPageCount) units = `${entry.pdfPageCount} pages`;
+    }
+
+    let statusText = entry.status;
+    let statusCls = entry.status;
+    if (entry.status === 'loading') statusText = 'loading…';
+    else if (entry.status === 'ready') statusText = 'ready';
+    else if (entry.status === 'translating') statusText = 'translating…';
+    else if (entry.status === 'building') statusText = 'building…';
+    else if (entry.status === 'done') statusText = '✓ done';
+    else if (entry.status === 'error') statusText = '✗ error';
+
+    row.innerHTML = `
+      <div class="batch-icon ${ext}">${ext === 'pdf' ? 'PDF' : ext === 'docx' ? 'DOC' : 'XLS'}</div>
+      <div class="batch-name" title="${escapeHtml(entry.name)}">${escapeHtml(entry.name)}</div>
+      <div class="batch-size">${fmtBytes(entry.size)}</div>
+      <div class="batch-units">${units}</div>
+      <div class="batch-status ${statusCls}">${statusText}</div>
+      <div class="batch-action"></div>
+    `;
+
+    const actionCell = row.querySelector('.batch-action');
+    if (entry.status === 'done' && entry.translatedBlob) {
+      const dl = document.createElement('button');
+      dl.className = 'batch-download';
+      dl.textContent = '↓ download';
+      dl.onclick = () => downloadEntry(entry);
+      actionCell.appendChild(dl);
+    } else if (entry.status === 'ready' || entry.status === 'loading' || entry.status === 'error') {
+      const rm = document.createElement('button');
+      rm.className = 'batch-remove';
+      rm.textContent = 'remove';
+      rm.onclick = () => removeEntry(entry.id);
+      actionCell.appendChild(rm);
+    }
+
+    list.appendChild(row);
+  }
+}
+
+function removeEntry(id) {
+  // Remove the entry, then rebuild the global strings table from scratch
+  state.batch = state.batch.filter(e => e.id !== id);
+  if (state.batch.length === 0) {
+    resetAll();
+    return;
+  }
+  // Rebuild dedup'd strings from remaining entries' source data
+  rebuildGlobalStrings();
+  renderBatchList();
+  updateBatchSummary();
+  renderStrings();
+}
+
+/**
+ * Rebuild state.strings from scratch by walking each entry's source data.
+ * Preserves any user-edited or already-translated values for strings that
+ * survive in the new set.
+ */
+function rebuildGlobalStrings() {
+  // Snapshot existing translations
+  const previous = new Map();
+  for (const s of state.strings) {
+    if (s.translation) previous.set(s.text, { translation: s.translation, fromGlossary: s.fromGlossary });
+  }
+
+  state.strings = [];
+  state.stringIndex.clear();
+
+  for (const entry of state.batch) {
+    if (entry.status === 'error') continue;
+
+    if (entry.type === 'xlsx') {
+      // Re-walk workbook.xml for sheet names
+      if (entry.workbookXml) {
+        const sheetTagRe = /<sheet\s+[^>]*name="([^"]*)"/g;
+        let sm, sIdx = 0;
+        while ((sm = sheetTagRe.exec(entry.workbookXml)) !== null) {
+          const decoded = decodeXmlEntities(sm[1]);
+          if (hasChineseChars(decoded)) {
+            addOrMergeString(decoded, entry.id, { type: 'sheetName', sheetIndex: sIdx });
+          }
+          sIdx++;
+        }
+      }
+      // Re-walk sharedStrings.xml
+      if (entry.sharedStringsXml) {
+        const siRegex = /<si\b[^>]*>([\s\S]*?)<\/si>/g;
+        let siMatch, siIndex = 0;
+        while ((siMatch = siRegex.exec(entry.sharedStringsXml)) !== null) {
+          const tRegex = /<t\b([^>]*)>([\s\S]*?)<\/t>/g;
+          let tMatch, tIndex = 0;
+          while ((tMatch = tRegex.exec(siMatch[1])) !== null) {
+            const decoded = decodeXmlEntities(tMatch[2]);
+            if (hasChineseChars(decoded)) {
+              addOrMergeString(decoded, entry.id, { type: 'sharedString', siIndex, tIndex });
+            }
+            tIndex++;
+          }
+          siIndex++;
+        }
+      }
+      // Re-walk inline cell strings + headers/footers
+      for (const path of entry.sheetXmlPaths || []) {
+        const info = entry.inlineSheetXmls[path];
+        if (!info) continue;
+        const isRegex = /<is\b[^>]*>([\s\S]*?)<\/is>/g;
+        let isMatch, isIdx = 0;
+        while ((isMatch = isRegex.exec(info.original)) !== null) {
+          const tRegex = /<t\b([^>]*)>([\s\S]*?)<\/t>/g;
+          let tMatch, tIdx = 0;
+          while ((tMatch = tRegex.exec(isMatch[1])) !== null) {
+            const decoded = decodeXmlEntities(tMatch[2]);
+            if (hasChineseChars(decoded)) {
+              addOrMergeString(decoded, entry.id, { type: 'inlineSheet', path, isIndex: isIdx, tIndex: tIdx });
+            }
+            tIdx++;
+          }
+          isIdx++;
+        }
+        // headers/footers
+        const hfTags = ['oddHeader', 'oddFooter', 'evenHeader', 'evenFooter', 'firstHeader', 'firstFooter'];
+        for (const tag of hfTags) {
+          const hfRe = new RegExp('<' + tag + '>([\\s\\S]*?)<\\/' + tag + '>', 'g');
+          let hm;
+          while ((hm = hfRe.exec(info.original)) !== null) {
+            const decoded = decodeXmlEntities(hm[1]);
+            if (hasChineseChars(decoded)) {
+              addOrMergeString(decoded, entry.id, { type: 'headerFooter', path, tag });
+            }
+          }
+        }
+      }
+      // Re-walk drawings
+      for (const path of entry.drawingXmlPaths || []) {
+        const info = entry.drawingXmls[path];
+        if (!info) continue;
+        const aTRegex = /<a:t\b[^>]*>([\s\S]*?)<\/a:t>/g;
+        let m, atIdx = 0;
+        while ((m = aTRegex.exec(info.original)) !== null) {
+          const decoded = decodeXmlEntities(m[1]);
+          if (hasChineseChars(decoded)) {
+            addOrMergeString(decoded, entry.id, { type: 'drawing', path, atIndex: atIdx });
+          }
+          atIdx++;
+        }
+      }
+    } else if (entry.type === 'pdf') {
+      for (let i = 0; i < (entry.pdfSpans || []).length; i++) {
+        addOrMergeString(entry.pdfSpans[i].text, entry.id, { type: 'pdf', spanIndex: i });
+      }
+    } else if (entry.type === 'docx') {
+      for (const path of entry.docxXmlPaths || []) {
+        const info = entry.docxXmls[path];
+        if (!info) continue;
+        const tRegex = /<w:t\b([^>]*)>([\s\S]*?)<\/w:t>/g;
+        let m, idx = 0;
+        while ((m = tRegex.exec(info.original)) !== null) {
+          const decoded = decodeXmlEntities(m[2]);
+          if (hasChineseChars(decoded)) {
+            addOrMergeString(decoded, entry.id, { type: 'docx', path, tIndex: idx });
+          }
+          idx++;
+        }
+      }
+    }
+  }
+
+  // Restore previous translations
+  for (const s of state.strings) {
+    if (previous.has(s.text)) {
+      s.translation = previous.get(s.text).translation;
+      s.fromGlossary = previous.get(s.text).fromGlossary;
+    }
+  }
+
+  // Sort by usage count
+  state.strings.sort((a, b) => b.count - a.count);
+  state.stringIndex.clear();
+  state.strings.forEach((s, i) => { s.id = i; state.stringIndex.set(s.text, i); });
+}
+
+/**
+ * Update the batch summary stats at the top.
+ */
+function updateBatchSummary() {
+  $('info-batch-count').textContent = state.batch.length;
+  const totalSize = state.batch.reduce((sum, e) => sum + e.size, 0);
+  $('info-size').textContent = fmtBytes(totalSize);
+  let totalUnits = 0;
+  for (const e of state.batch) {
+    if (e.status === 'error') continue;
+    if (e.type === 'xlsx') totalUnits += (e.sheetCount || 0);
+    else if (e.type === 'docx') totalUnits += (e.paragraphCount || 0);
+    else totalUnits += (e.pdfPageCount || 0);
+  }
+  $('info-sheets').textContent = totalUnits.toLocaleString();
+  $('info-strings').textContent = state.strings.length.toLocaleString();
+}
+
+function downloadEntry(entry) {
+  if (!entry.translatedBlob) return;
+  const url = URL.createObjectURL(entry.translatedBlob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = entry.translatedName || entry.name;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+// =============================================================
+// String extraction
+// =============================================================
+function hasChineseChars(text) {
+  return /[\u4e00-\u9fff\u3400-\u4dbf\uf900-\ufaff]/.test(text);
+}
+
+function decodeXmlEntities(s) {
+  return s.replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&quot;/g,'"').replace(/&apos;/g,"'").replace(/&amp;/g,'&');
+}
+
+function encodeXmlEntities(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&apos;');
+}
+
+// =============================================================
+// Render strings table
+// =============================================================
+function renderStrings(filter='') {
+  const tbody = $('strings-tbody');
+  tbody.innerHTML = '';
+
+  const f = filter.toLowerCase().trim();
+  const filtered = f
+    ? state.strings.filter(s => s.text.toLowerCase().includes(f) || (s.translation || '').toLowerCase().includes(f))
+    : state.strings;
+
+  // Limit visible rows for performance on huge documents
+  const MAX_VISIBLE = 500;
+  const visible = filtered.slice(0, MAX_VISIBLE);
+
+  for (const s of visible) {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td class="idx">${s.id + 1}</td>
+      <td class="cn">${escapeHtml(s.text)}</td>
+      <td class="en editable-cell ${s.translation ? '' : 'empty'}" data-id="${s.id}">${
+        s.translation ? escapeHtml(s.translation) : '— click to edit —'
+      }</td>
+      <td class="count">×${s.count}</td>
+    `;
+    tbody.appendChild(tr);
+  }
+
+  if (filtered.length > MAX_VISIBLE) {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td colspan="4" style="text-align:center;color:var(--text-faint);font-style:italic;padding:14px;">… ${filtered.length - MAX_VISIBLE} more rows hidden — use the filter to find specific strings</td>`;
+    tbody.appendChild(tr);
+  }
+
+  // Stats
+  const totalChars = state.strings.reduce((sum, s) => sum + s.text.length, 0);
+  const fromGlossary = state.strings.filter(s => s.fromGlossary).length;
+  const pending = state.strings.filter(s => !s.translation).length;
+  $('stat-unique').textContent = state.strings.length.toLocaleString();
+  $('stat-chars').textContent = totalChars.toLocaleString();
+  $('stat-glossary').textContent = fromGlossary.toLocaleString();
+  $('stat-pending').textContent = pending.toLocaleString();
+
+  if (state.strings.length > 0 && pending < state.strings.length) {
+    setStatus(3, fromGlossary > 0 ? `${fromGlossary} from glossary` : 'edits made', 'done');
+  }
+
+  // Step 4 unlock
+  if (state.strings.length > 0) {
+    unlockStep(4);
+    setStatus(4, pending > 0 ? `${pending} pending` : 'all done', pending > 0 ? 'warn' : 'done');
+  }
+}
+
+// Inline editing
+$('strings-tbody').addEventListener('click', e => {
+  const cell = e.target.closest('td.en.editable-cell');
+  if (!cell || cell.classList.contains('editing')) return;
+  const id = +cell.dataset.id;
+  const s = state.strings[id];
+  cell.classList.add('editing');
+  cell.classList.remove('empty');
+  const input = document.createElement('input');
+  input.className = 'inline-input';
+  input.value = s.translation || '';
+  cell.innerHTML = '';
+  cell.appendChild(input);
+  input.focus();
+  input.select();
+
+  const finish = () => {
+    s.translation = input.value.trim();
+    cell.classList.remove('editing');
+    cell.classList.toggle('empty', !s.translation);
+    cell.textContent = s.translation || '— click to edit —';
+    renderStrings($('filter').value);
+  };
+
+  input.addEventListener('blur', finish);
+  input.addEventListener('keydown', ev => {
+    if (ev.key === 'Enter') { ev.preventDefault(); input.blur(); }
+    if (ev.key === 'Escape') { input.value = s.translation || ''; input.blur(); }
+  });
+});
+
+$('filter').addEventListener('input', e => renderStrings(e.target.value));
+
+// =============================================================
+// Glossary import / export
+// =============================================================
+$('btn-export-glossary').addEventListener('click', () => {
+  const glossary = {};
+  for (const s of state.strings) {
+    if (s.translation) glossary[s.text] = s.translation;
+  }
+  const blob = new Blob([JSON.stringify(glossary, null, 2)], {type: 'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'glossary-' + new Date().toISOString().slice(0, 10) + '.json';
+  a.click();
+  URL.revokeObjectURL(url);
+});
+
+$('btn-import-glossary').addEventListener('click', () => $('glossary-input').click());
+
+$('glossary-input').addEventListener('change', async e => {
+  if (!e.target.files.length) return;
+  try {
+    const text = await e.target.files[0].text();
+    const glossary = JSON.parse(text);
+    let applied = 0;
+    for (const s of state.strings) {
+      if (glossary[s.text] && !s.translation) {
+        s.translation = glossary[s.text];
+        s.fromGlossary = true;
+        applied++;
+      }
+    }
+    log(`Imported glossary: ${applied} translations applied (of ${Object.keys(glossary).length} entries).`, 'ok');
+    renderStrings($('filter').value);
+  } catch (err) {
+    alert('Could not read glossary: ' + err.message);
+  }
+  e.target.value = '';
+});
+
+// =============================================================
+// Provider tabs
+// =============================================================
+$$('.provider-tab').forEach(btn => {
+  btn.addEventListener('click', () => {
+    $$('.provider-tab').forEach(b => b.classList.remove('active'));
+    $$('.tab-content').forEach(c => c.classList.remove('active'));
+    btn.classList.add('active');
+    $('tab-' + btn.dataset.provider).classList.add('active');
+    state.provider = btn.dataset.provider;
+    $('test-result').textContent = '';
+    setStatus(2, state.provider === 'manual' ? 'manual mode' : 'pending key', state.provider === 'manual' ? 'done' : 'warn');
+  });
+});
+
+// =============================================================
+// Connection test
+// =============================================================
+$('btn-test-api').addEventListener('click', async () => {
+  const result = $('test-result');
+  result.style.color = 'var(--text-faint)';
+  result.textContent = 'testing...';
+
+  try {
+    const out = await translateBatch(['你好'], state.provider);
+    if (out && out[0] && out[0].length > 0) {
+      result.style.color = 'var(--green)';
+      result.textContent = '✓ connection ok · "你好" → "' + out[0] + '"';
+      setStatus(2, 'connected', 'done');
+    } else {
+      result.style.color = 'var(--amber)';
+      result.textContent = '⚠ empty response — check your API key';
+    }
+  } catch (e) {
+    result.style.color = 'var(--red)';
+    result.textContent = '✕ ' + e.message;
+  }
+});
+
+// =============================================================
+// Translation providers
+// =============================================================
+async function translateBatch(texts, provider) {
+  if (provider === 'anthropic') return translateAnthropic(texts);
+  if (provider === 'google') return translateGoogle(texts);
+  if (provider === 'deepl') return translateDeepL(texts);
+  if (provider === 'openai') return translateOpenAI(texts);
+  if (provider === 'manual') return texts.map(() => '');
+  throw new Error('Unknown provider: ' + provider);
+}
+
+async function translateAnthropic(texts) {
+  const key = $('anthropic-key').value.trim();
+  const model = $('anthropic-model').value;
+  const context = $('anthropic-context').value.trim();
+  if (!key) throw new Error('Missing Anthropic API key');
+
+  const numbered = texts.map((t, i) => `${i + 1}. ${t}`).join('\n');
+  const sys = `You are a professional Chinese to English translator.
+
+${context}
+
+You will receive a numbered list of Chinese strings. For each one, output the English translation on its own numbered line, in the EXACT same format. Output ONLY the numbered list — no explanations, no preamble, no markdown. Preserve numbers, codes, and abbreviations exactly as-is. Match the original style (terse text → terse English; formal text → formal English). If a string is already English or non-translatable (a code, number, or symbol), repeat it unchanged.`;
+
+  const resp = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': key,
+      'anthropic-version': '2023-06-01',
+      'anthropic-dangerous-direct-browser-access': 'true',
+    },
+    body: JSON.stringify({
+      model: model,
+      max_tokens: 4096,
+      system: sys,
+      messages: [
+        {role: 'user', content: numbered},
+      ],
+    }),
+  });
+
+  if (!resp.ok) {
+    const t = await resp.text().catch(() => '');
+    throw new Error('Anthropic API ' + resp.status + ': ' + t.slice(0, 300));
+  }
+  const data = await resp.json();
+  const content = data.content
+    .filter(b => b.type === 'text')
+    .map(b => b.text)
+    .join('\n');
+
+  // Parse numbered list back
+  const out = new Array(texts.length).fill('');
+  const lines = content.split('\n');
+  for (const line of lines) {
+    const m = line.match(/^\s*(\d+)[\.\)]\s*(.*)$/);
+    if (m) {
+      const idx = parseInt(m[1], 10) - 1;
+      if (idx >= 0 && idx < texts.length) {
+        out[idx] = m[2].trim();
+      }
+    }
+  }
+  // Fill any empties with original (so we don't lose data)
+  for (let i = 0; i < out.length; i++) {
+    if (!out[i]) out[i] = texts[i];
+  }
+  return out;
+}
+
+async function translateGoogle(texts) {
+  const key = $('google-key').value.trim();
+  if (!key) throw new Error('Missing Google API key');
+  const url = 'https://translation.googleapis.com/language/translate/v2?key=' + encodeURIComponent(key);
+  const body = {
+    q: texts,
+    source: 'zh-CN',
+    target: 'en',
+    format: 'text',
+  };
+  const resp = await fetch(url, {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify(body),
+  });
+  if (!resp.ok) {
+    const err = await resp.json().catch(() => ({}));
+    throw new Error('Google API ' + resp.status + ': ' + (err?.error?.message || resp.statusText));
+  }
+  const data = await resp.json();
+  return data.data.translations.map(t => t.translatedText);
+}
+
+async function translateDeepL(texts) {
+  const key = $('deepl-key').value.trim();
+  const plan = $('deepl-plan').value;
+  if (!key) throw new Error('Missing DeepL API key');
+  const baseUrl = plan === 'free' ? 'https://api-free.deepl.com' : 'https://api.deepl.com';
+  const url = baseUrl + '/v2/translate';
+
+  // DeepL uses form-encoded with repeated `text` params
+  const params = new URLSearchParams();
+  texts.forEach(t => params.append('text', t));
+  params.append('source_lang', 'ZH');
+  params.append('target_lang', 'EN-US');
+
+  const resp = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded',
+      'Authorization': 'DeepL-Auth-Key ' + key,
+    },
+    body: params,
+  });
+  if (!resp.ok) {
+    const t = await resp.text().catch(() => '');
+    throw new Error('DeepL API ' + resp.status + ': ' + t.slice(0, 200));
+  }
+  const data = await resp.json();
+  return data.translations.map(t => t.text);
+}
+
+async function translateOpenAI(texts) {
+  const key = $('openai-key').value.trim();
+  const model = $('openai-model').value;
+  const context = $('openai-context').value.trim();
+  if (!key) throw new Error('Missing OpenAI API key');
+
+  // Use a numbered list approach to keep alignment
+  const numbered = texts.map((t, i) => `${i + 1}. ${t}`).join('\n');
+  const sys = `You are a professional Chinese to English translator. ${context}
+
+You will receive a numbered list of Chinese strings. For each one, output the English translation on its own numbered line, in the EXACT same format. Output ONLY the numbered list — no explanations, no extra text. Preserve numbers, codes, and abbreviations exactly as-is. Match the original style (terse text → terse English; formal text → formal English).`;
+
+  const resp = await fetch('https://api.openai.com/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer ' + key,
+    },
+    body: JSON.stringify({
+      model: model,
+      messages: [
+        {role: 'system', content: sys},
+        {role: 'user', content: numbered},
+      ],
+      temperature: 0.1,
+    }),
+  });
+  if (!resp.ok) {
+    const t = await resp.text().catch(() => '');
+    throw new Error('OpenAI API ' + resp.status + ': ' + t.slice(0, 300));
+  }
+  const data = await resp.json();
+  const content = data.choices[0].message.content;
+
+  // Parse numbered list back. Use a tolerant parser that finds each "N. " prefix.
+  const out = new Array(texts.length).fill('');
+  const lines = content.split('\n');
+  for (const line of lines) {
+    const m = line.match(/^\s*(\d+)[\.\)]\s*(.*)$/);
+    if (m) {
+      const idx = parseInt(m[1], 10) - 1;
+      if (idx >= 0 && idx < texts.length) {
+        out[idx] = m[2].trim();
+      }
+    }
+  }
+  // Fill any empties with original (so we don't lose data)
+  for (let i = 0; i < out.length; i++) {
+    if (!out[i]) out[i] = texts[i];
+  }
+  return out;
+}
+
+// =============================================================
+// Main translation runner
+// =============================================================
+$('btn-translate').addEventListener('click', runTranslation);
+$('btn-cancel').addEventListener('click', () => {
+  state.cancelRequested = true;
+  log('Cancellation requested...', 'warn');
+});
+
+async function runTranslation() {
+  if (state.isTranslating) return;
+
+  const pending = state.strings.filter(s => !s.translation);
+  if (pending.length === 0) {
+    log('Nothing to translate — all strings already have translations.', 'ok');
+    finalizeAndBuild();
+    return;
+  }
+
+  if (state.provider === 'manual') {
+    log('Manual mode: skipping API translation, building output with current translations only.', 'info');
+    finalizeAndBuild();
+    return;
+  }
+
+  state.isTranslating = true;
+  state.cancelRequested = false;
+  $('btn-translate').disabled = true;
+  $('btn-cancel').style.display = 'inline-flex';
+  $('progress-wrap').style.display = 'block';
+  setStatus(4, 'translating...', 'warn');
+
+  // Batch sizing per provider
+  const batchSize =
+    state.provider === 'anthropic' ? 25 :
+    state.provider === 'google' ? 50 :
+    state.provider === 'deepl' ? 50 :
+    state.provider === 'openai' ? 20 : 50;
+
+  log(`Starting translation: ${pending.length} strings · provider=${state.provider} · batch=${batchSize}`, 'info');
+
+  let done = 0;
+  const total = pending.length;
+
+  for (let i = 0; i < pending.length; i += batchSize) {
+    if (state.cancelRequested) {
+      log('Translation cancelled.', 'warn');
+      break;
+    }
+    const batch = pending.slice(i, i + batchSize);
+    const batchTexts = batch.map(s => s.text);
+
+    updateProgress(done, total, `batch ${Math.floor(i/batchSize)+1} of ${Math.ceil(pending.length/batchSize)}`);
+
+    try {
+      const results = await translateBatch(batchTexts, state.provider);
+      for (let j = 0; j < batch.length; j++) {
+        if (results[j]) batch[j].translation = results[j];
+      }
+      done += batch.length;
+      updateProgress(done, total, `${done.toLocaleString()} / ${total.toLocaleString()} translated`);
+      renderStrings($('filter').value);
+      // Short delay to avoid rate-limiting
+      await new Promise(r => setTimeout(r, 50));
+    } catch (e) {
+      log('Batch failed: ' + e.message, 'err');
+      // Try smaller batches on failure (binary backoff)
+      if (batch.length > 1) {
+        log('Retrying with smaller batches...', 'warn');
+        const half = Math.ceil(batch.length / 2);
+        try {
+          const a = await translateBatch(batch.slice(0, half).map(s => s.text), state.provider);
+          a.forEach((t, k) => { if (t) batch[k].translation = t; });
+          const b = await translateBatch(batch.slice(half).map(s => s.text), state.provider);
+          b.forEach((t, k) => { if (t) batch[half + k].translation = t; });
+          done += batch.length;
+          updateProgress(done, total, `${done} / ${total}`);
+          renderStrings($('filter').value);
+        } catch (e2) {
+          log('Retry also failed: ' + e2.message + ' — stopping.', 'err');
+          break;
+        }
+      } else {
+        log('Single-item batch failed — stopping.', 'err');
+        break;
+      }
+    }
+  }
+
+  state.isTranslating = false;
+  $('btn-translate').disabled = false;
+  $('btn-cancel').style.display = 'none';
+
+  const stillPending = state.strings.filter(s => !s.translation).length;
+  if (stillPending === 0) {
+    log('Translation complete.', 'ok');
+    setStatus(4, 'complete', 'done');
+  } else {
+    log(`Stopped with ${stillPending} string(s) still untranslated. You can edit them manually or re-run.`, 'warn');
+    setStatus(4, `${stillPending} pending`, 'warn');
+  }
+
+  finalizeAndBuild();
+}
+
+function updateProgress(done, total, status) {
+  const pct = total > 0 ? (done / total) * 100 : 0;
+  $('progress-fill').style.width = pct + '%';
+  $('progress-counts').textContent = done.toLocaleString() + ' / ' + total.toLocaleString();
+  $('progress-status').textContent = status;
+}
+
+// =============================================================
+// Build output (XLSX or PDF)
+// =============================================================
+async function finalizeAndBuild() {
+  if (state.isBuilding) return;
+  state.isBuilding = true;
+  setStatus(5, 'building...', 'warn');
+  unlockStep(5);
+
+  const entries = state.batch.filter(e => e.status === 'ready' || e.status === 'translating');
+  log(`Building ${entries.length} translated file(s)...`, 'info');
+
+  // Render the per-file download summary
+  renderDownloadSummary();
+
+  let succeeded = 0;
+  let failed = 0;
+
+  for (let i = 0; i < entries.length; i++) {
+    const entry = entries[i];
+    if (state.cancelRequested) {
+      log('Build cancelled.', 'warn');
+      break;
+    }
+    entry.status = 'building';
+    renderBatchList();
+    renderDownloadSummary();
+    setStatus(5, `building ${i + 1} / ${entries.length}...`, 'warn');
+
+    try {
+      if (entry.type === 'xlsx') {
+        await buildExcelEntry(entry);
+      } else if (entry.type === 'docx') {
+        await buildDocxEntry(entry);
+      } else {
+        await buildPdfEntry(entry);
+      }
+      entry.status = 'done';
+      succeeded++;
+      log(`✓ ${entry.name} → ${entry.translatedName} (${fmtBytes(entry.translatedBlob.size)})`, 'ok');
+    } catch (e) {
+      console.error(e);
+      entry.status = 'error';
+      entry.error = e.message || String(e);
+      failed++;
+      log(`✗ ${entry.name} failed: ${entry.error}`, 'err');
+    }
+    renderBatchList();
+    renderDownloadSummary();
+    // Yield between files
+    await new Promise(r => setTimeout(r, 100));
+  }
+
+  state.isBuilding = false;
+
+  if (succeeded > 0) {
+    setStatus(5, `${succeeded} ready${failed > 0 ? `, ${failed} failed` : ''}`, failed > 0 ? 'warn' : 'done');
+  } else {
+    setStatus(5, 'build error', 'err');
+  }
+}
+
+/**
+ * Render the per-file download summary in step 5.
+ */
+function renderDownloadSummary() {
+  const wrap = $('download-summary');
+  if (!wrap) return;
+  if (!state.batch.length) { wrap.innerHTML = ''; return; }
+
+  wrap.innerHTML = '';
+  for (const e of state.batch) {
+    const row = document.createElement('div');
+    row.className = 'row';
+    let statusHtml = '';
+    let actionHtml = '';
+    if (e.status === 'done' && e.translatedBlob) {
+      statusHtml = `<span style="color:var(--green);">✓ ready</span>`;
+      const id = 'dlr-' + e.id;
+      actionHtml = `<button class="batch-download" id="${id}">↓ download</button>`;
+    } else if (e.status === 'error') {
+      statusHtml = `<span style="color:var(--red);">✗ ${escapeHtml(e.error || 'error')}</span>`;
+    } else if (e.status === 'building') {
+      statusHtml = `<span style="color:var(--accent);">building…</span>`;
+    } else {
+      statusHtml = `<span style="color:var(--text-faint);">${e.status}</span>`;
+    }
+    row.innerHTML = `
+      <span style="color:var(--text);">${escapeHtml(e.name)}</span>
+      <span style="display:flex;gap:14px;align-items:center;">
+        ${statusHtml}
+        ${actionHtml}
+      </span>
+    `;
+    wrap.appendChild(row);
+    if (e.status === 'done' && e.translatedBlob) {
+      $(`dlr-${e.id}`).onclick = () => downloadEntry(e);
+    }
+  }
+}
+
+/**
+ * Build translated Excel file for a single batch entry.
+ */
+async function buildExcelEntry(entry) {
+  // Build translation map (shared across all entries in the batch)
+  const tmap = new Map();
+  for (const s of state.strings) {
+    if (s.translation) tmap.set(s.text, s.translation);
+  }
+
+  // Read layout options
+  const resizeRows = $('opt-resize-rows').checked;
+  const resizeCols = $('opt-resize-cols').checked;
+  const wrapText = $('opt-wrap-text').checked;
+  const shrinkFont = $('opt-shrink-font').checked;
+  const replaceFont = $('opt-replace-font') ? $('opt-replace-font').checked : false;
+  const rowMult = parseFloat($('opt-row-mult').value) || 1.6;
+  const colMult = parseFloat($('opt-col-mult').value) || 1.4;
+  const fontName = ($('opt-font-name') && $('opt-font-name').value) || 'Calibri';
+
+  // 1) sharedStrings.xml — cell text content
+  if (entry.sharedStringsXml) {
+    const newSharedStrings = rewriteXmlStrings(entry.sharedStringsXml, tmap);
+    entry.zip.file('xl/sharedStrings.xml', newSharedStrings);
+  }
+
+  // 2) workbook.xml — sheet names (tabs)
+  if (entry.workbookXml) {
+    let newWb = entry.workbookXml.replace(/(<sheet\s+[^>]*name=")([^"]*)(")/g, (full, pre, name, post) => {
+      const decoded = decodeXmlEntities(name);
+      if (tmap.has(decoded)) {
+        // Excel sheet names have constraints:
+        //   - max 31 characters
+        //   - no : \ / ? * [ ]
+        let translated = tmap.get(decoded);
+        translated = translated.replace(/[:\\/?*\[\]]/g, '-');
+        if (translated.length > 31) translated = translated.slice(0, 31);
+        return pre + encodeXmlEntities(translated) + post;
+      }
+      return full;
+    });
+    entry.zip.file('xl/workbook.xml', newWb);
+  }
+
+  // 3) Each sheet xml — inline strings, headers/footers, row/col resizing
+  let totalRowsResized = 0;
+  let totalColsResized = 0;
+  for (const path of entry.sheetXmlPaths) {
+    const sheetInfo = entry.inlineSheetXmls[path];
+    let xml = sheetInfo ? sheetInfo.original : await entry.zip.file(path).async('string');
+
+    // Inline strings
+    if (sheetInfo && sheetInfo.hasInline) xml = rewriteXmlStrings(xml, tmap);
+
+    // Page headers/footers — each is one contiguous string, possibly containing
+    // Excel format codes (&L, &C, &R, &P, &D, etc.) which we preserve as-is.
+    if (sheetInfo && sheetInfo.hasHeaderFooter) {
+      const hfTags = ['oddHeader', 'oddFooter', 'evenHeader', 'evenFooter', 'firstHeader', 'firstFooter'];
+      for (const tag of hfTags) {
+        const hfRe = new RegExp('<' + tag + '>([\\s\\S]*?)<\\/' + tag + '>', 'g');
+        xml = xml.replace(hfRe, (full, inner) => {
+          const decoded = decodeXmlEntities(inner);
+          if (tmap.has(decoded)) {
+            return '<' + tag + '>' + encodeXmlEntities(tmap.get(decoded)) + '</' + tag + '>';
+          }
+          return full;
+        });
+      }
+    }
+
+    if (resizeRows) {
+      // Match BOTH self-closing (<row ... />) and opening (<row ...>) row tags.
+      // We must preserve the closing form, otherwise we'd create unclosed tags.
+      xml = xml.replace(/<row\b[^>]*?(\/?)>/g, (rowTag, selfClose) => {
+        const htMatch = rowTag.match(/\bht="([^"]+)"/);
+        if (htMatch) {
+          const oldHt = parseFloat(htMatch[1]);
+          if (!isNaN(oldHt)) {
+            const newHt = Math.round(oldHt * rowMult * 100) / 100;
+            let updated = rowTag.replace(/\bht="[^"]+"/, `ht="${newHt}"`);
+            // Add customHeight="1" if not present, preserving self-closing vs opening
+            if (!/\bcustomHeight=/.test(updated)) {
+              if (selfClose === '/') {
+                updated = updated.replace(/\/>$/, ' customHeight="1"/>');
+              } else {
+                updated = updated.replace(/>$/, ' customHeight="1">');
+              }
+            }
+            totalRowsResized++;
+            return updated;
+          }
+        }
+        return rowTag;
+      });
+    }
+
+    if (resizeCols) {
+      // Column tags can be self-closing (<col .../>) or paired (<col ...></col>).
+      // We handle both forms.
+      xml = xml.replace(/<col\b[^>]*?(\/?)>/g, (colTag, selfClose) => {
+        const wMatch = colTag.match(/\bwidth="([^"]+)"/);
+        if (wMatch) {
+          const oldW = parseFloat(wMatch[1]);
+          if (!isNaN(oldW)) {
+            const newW = Math.round(oldW * colMult * 10000) / 10000;
+            let updated = colTag.replace(/\bwidth="[^"]+"/, `width="${newW}"`);
+            if (!/\bcustomWidth=/.test(updated)) {
+              if (selfClose === '/') {
+                updated = updated.replace(/\/>$/, ' customWidth="1"/>');
+              } else {
+                updated = updated.replace(/>$/, ' customWidth="1">');
+              }
+            }
+            totalColsResized++;
+            return updated;
+          }
+        }
+        return colTag;
+      });
+    }
+    entry.zip.file(path, xml);
+  }
+
+  // 4) Drawings (shape labels, image callouts)
+  if (entry.drawingXmls) {
+    for (const path of entry.drawingXmlPaths) {
+      const info = entry.drawingXmls[path];
+      if (!info || !info.hasChinese) continue;
+      const newXml = info.original.replace(/<a:t\b([^>]*)>([\s\S]*?)<\/a:t>/g, (full, attrs, inner) => {
+        const decoded = decodeXmlEntities(inner);
+        if (tmap.has(decoded)) return `<a:t${attrs}>${encodeXmlEntities(tmap.get(decoded))}</a:t>`;
+        return full;
+      });
+      entry.zip.file(path, newXml);
+    }
+  }
+
+  // 5) styles.xml — wrap text + optional font replacement
+  // Font replacement: Chinese fonts (SimSun, SimHei, 宋体, 黑体, etc.) don't
+  // have English glyphs. When users see "font changed" in output, what they're
+  // seeing is Excel substituting at display time. Pre-replacing the font in
+  // the file with an English-capable font guarantees consistent display.
+  if (wrapText || shrinkFont || replaceFont) {
+    const stylesFile = entry.zip.file('xl/styles.xml');
+    if (stylesFile) {
+      let stylesXml = await stylesFile.async('string');
+
+      // ----- Replace Chinese-only fonts with an English-capable font -----
+      if (replaceFont) {
+        // Common Chinese font names to replace.
+        // CRITICAL: do NOT use /g flag here — using a stateful regex inside
+        // a loop with .test() advances lastIndex between calls and produces
+        // non-deterministic matching, which corrupts the file.
+        const chineseFontPatterns = [
+          /宋体/, /黑体/, /微软雅黑/, /仿宋/, /楷体/, /新宋体/,
+          /SimSun/i, /SimHei/i, /Microsoft\s*YaHei/i, /Microsoft\s*JhengHei/i,
+          /FangSong/i, /KaiTi/i, /NSimSun/i, /SimSun-ExtB/i, /STSong/i,
+          /STKaiti/i, /STFangsong/i, /STHeiti/i, /YouYuan/i, /LiSu/i,
+        ];
+        // Only match <font> blocks INSIDE the <fonts> wrapper. The pattern
+        // <font> without attributes is what Excel uses for individual font
+        // definitions; the wrapper is <fonts count="N">.
+        stylesXml = stylesXml.replace(/<font>([\s\S]*?)<\/font>/g, (full, content) => {
+          // Replace <name val="ChineseFont"/> within the font block
+          const newContent = content.replace(/(<name\s+val=")([^"]*)("\s*\/>)/g, (m, pre, fontVal, post) => {
+            for (const pat of chineseFontPatterns) {
+              if (pat.test(fontVal)) {
+                return pre + fontName + post;
+              }
+            }
+            return m;
+          });
+          return '<font>' + newContent + '</font>';
+        });
+      }
+
+      // ----- Wrap text / shrink-to-fit -----
+      if (wrapText || shrinkFont) {
+        const cellXfsMatch = stylesXml.match(/<cellXfs\b[^>]*>([\s\S]*?)<\/cellXfs>/);
+        if (cellXfsMatch) {
+          const inner = cellXfsMatch[1];
+          const newInner = inner.replace(/<xf\b([^>]*?)(\/>|>([\s\S]*?)<\/xf>)/g, (fullXf, attrs, closing, content) => {
+            const isSelfClosing = closing === '/>';
+            let align = '';
+            if (wrapText && shrinkFont) align = '<alignment wrapText="1" shrinkToFit="1" vertical="center"/>';
+            else if (wrapText) align = '<alignment wrapText="1" vertical="center"/>';
+            else if (shrinkFont) align = '<alignment shrinkToFit="1"/>';
+
+            if (!isSelfClosing && /<alignment\b/.test(content)) {
+              const newContent = content.replace(/<alignment\b([^/>]*)(\/>|>[\s\S]*?<\/alignment>)/, (am, aAttrs) => {
+                let mergedAttrs = aAttrs;
+                if (wrapText && !/wrapText=/.test(mergedAttrs)) mergedAttrs += ' wrapText="1"';
+                if (shrinkFont && !/shrinkToFit=/.test(mergedAttrs)) mergedAttrs += ' shrinkToFit="1"';
+                return `<alignment${mergedAttrs}/>`;
+              });
+              let newAttrs = attrs;
+              if (!/applyAlignment=/.test(newAttrs)) newAttrs += ' applyAlignment="1"';
+              return `<xf${newAttrs}>${newContent}</xf>`;
+            }
+            let newAttrs = attrs;
+            if (!/applyAlignment=/.test(newAttrs)) newAttrs += ' applyAlignment="1"';
+            if (isSelfClosing) return `<xf${newAttrs}>${align}</xf>`;
+            return `<xf${newAttrs}>${content}${align}</xf>`;
+          });
+          stylesXml = stylesXml.replace(/<cellXfs\b[^>]*>([\s\S]*?)<\/cellXfs>/, (full) => {
+            const tagOpen = full.match(/<cellXfs\b[^>]*>/)[0];
+            return tagOpen + newInner + '</cellXfs>';
+          });
+        }
+      }
+
+      entry.zip.file('xl/styles.xml', stylesXml);
+    }
+  }
+
+  // Generate output file
+  const blob = await entry.zip.generateAsync({
+    type: 'blob',
+    compression: 'DEFLATE',
+    compressionOptions: { level: 6 },
+    mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  });
+  entry.translatedBlob = blob;
+  entry.translatedName = entry.name.replace(/(\.xls[xm])$/i, '_EN$1');
+}
+
+/**
+ * Build translated Word document for a single batch entry.
+ *
+ * Approach matches Excel: a .docx is a ZIP archive. We rewrite text inside
+ * <w:t> tags in every relevant XML part (document, headers, footers, comments,
+ * footnotes, endnotes), preserving the rest of the file byte-for-byte. Word
+ * automatically reflows paragraph text, so length differences between Chinese
+ * and English are handled naturally.
+ */
+async function buildDocxEntry(entry) {
+  const tmap = new Map();
+  for (const s of state.strings) {
+    if (s.translation) tmap.set(s.text, s.translation);
+  }
+
+  // Rewrite each XML part
+  for (const path of entry.docxXmlPaths) {
+    const info = entry.docxXmls[path];
+    if (!info || !info.hasChinese) continue;
+
+    const newXml = info.original.replace(/<w:t\b([^>]*)>([\s\S]*?)<\/w:t>/g, (full, attrs, inner) => {
+      const decoded = decodeXmlEntities(inner);
+      if (tmap.has(decoded)) {
+        const translated = tmap.get(decoded);
+        // Word needs xml:space="preserve" if the text has leading/trailing whitespace
+        let newAttrs = attrs;
+        if ((/^\s|\s$/.test(translated)) && !/xml:space/.test(newAttrs)) {
+          newAttrs = ' xml:space="preserve"' + newAttrs;
+        }
+        return `<w:t${newAttrs}>${encodeXmlEntities(translated)}</w:t>`;
+      }
+      return full;
+    });
+    entry.zip.file(path, newXml);
+  }
+
+  // Save
+  const blob = await entry.zip.generateAsync({
+    type: 'blob',
+    compression: 'DEFLATE',
+    compressionOptions: { level: 6 },
+    mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  });
+  entry.translatedBlob = blob;
+  entry.translatedName = entry.name.replace(/\.docx$/i, '_EN.docx');
+}
+
+/**
+ * Build translated PDF file for a single batch entry.
+ */
+async function buildPdfEntry(entry) {
+  const tmap = new Map();
+  for (const s of state.strings) {
+    if (s.translation) tmap.set(s.text, s.translation);
+  }
+
+  const autoShrink = $('opt-pdf-shrink').checked;
+  const allowWrap = $('opt-pdf-wrap').checked;
+  const allowOverflow = $('opt-pdf-allow-overflow').checked;
+  const minScale = parseFloat($('opt-pdf-min-scale').value) || 0.55;
+  const chunkSize = parseInt($('opt-pdf-chunk').value) || 50;
+
+  if (typeof PDFLib === 'undefined') {
+    throw new Error('pdf-lib library not loaded — check your internet connection.');
+  }
+
+  // Group spans by page
+  const spansByPage = new Map();
+  for (const span of entry.pdfSpans) {
+    const list = spansByPage.get(span.pageIndex) || [];
+    list.push(span);
+    spansByPage.set(span.pageIndex, list);
+  }
+
+  log(`  ${entry.name}: loading into pdf-lib...`, 'info');
+  await new Promise(r => setTimeout(r, 0));
+  const srcDoc = await PDFLib.PDFDocument.load(entry.buffer, { ignoreEncryption: true });
+  const totalPages = srcDoc.getPageCount();
+  const englishFont = await srcDoc.embedFont(PDFLib.StandardFonts.Helvetica);
+
+  let totalReplaced = 0, totalSkipped = 0;
+
+  for (let chunkStart = 0; chunkStart < totalPages; chunkStart += chunkSize) {
+    if (state.cancelRequested) break;
+    const chunkEnd = Math.min(chunkStart + chunkSize, totalPages);
+
+    for (let pageIdx = chunkStart; pageIdx < chunkEnd; pageIdx++) {
+      const page = srcDoc.getPage(pageIdx);
+      const pageSpans = spansByPage.get(pageIdx) || [];
+
+      for (const span of pageSpans) {
+        const translation = tmap.get(span.text);
+        if (!translation || translation === span.text) { totalSkipped++; continue; }
+
+        const fs = span.fontSize;
+        page.drawRectangle({
+          x: span.x - 1,
+          y: span.yBaseline - fs * 0.25,
+          width: Math.max(span.width, fs * 0.5) + 2,
+          height: fs * 1.25,
+          color: PDFLib.rgb(1, 1, 1),
+        });
+
+        const avgCharW = 0.55;
+        let textFontSize = fs;
+        const targetWidth = span.width;
+
+        if (autoShrink && targetWidth > 0) {
+          const requiredWidth = translation.length * fs * avgCharW;
+          if (requiredWidth > targetWidth) {
+            textFontSize = Math.max(fs * minScale, fs * (targetWidth / requiredWidth));
+          }
+        }
+
+        let lines = [translation];
+        if (allowWrap) {
+          const maxCharsPerLine = Math.max(8, Math.floor(targetWidth / (textFontSize * avgCharW)));
+          if (translation.length > maxCharsPerLine) lines = wrapText(translation, maxCharsPerLine);
+        }
+
+        if (!allowOverflow) {
+          const longestLine = lines.reduce((a, l) => Math.max(a, l.length), 0);
+          const lineWidth = longestLine * textFontSize * avgCharW;
+          if (lineWidth > targetWidth * 1.05 && targetWidth > 0) {
+            textFontSize = Math.max(fs * minScale, textFontSize * (targetWidth / lineWidth));
+          }
+        }
+        textFontSize = Math.max(textFontSize, 4);
+
+        const lineHeight = textFontSize * 1.15;
+        for (let li = 0; li < lines.length; li++) {
+          const lineY = span.yBaseline - li * lineHeight;
+          if (lineY < 2) break;
+          try {
+            page.drawText(lines[li], {
+              x: span.x, y: lineY, size: textFontSize,
+              font: englishFont, color: PDFLib.rgb(0, 0, 0),
+            });
+            totalReplaced++;
+          } catch (drawErr) {
+            try {
+              const asciiSafe = lines[li].replace(/[^\x20-\x7E]/g, '?');
+              page.drawText(asciiSafe, {
+                x: span.x, y: lineY, size: textFontSize,
+                font: englishFont, color: PDFLib.rgb(0, 0, 0),
+              });
+              totalReplaced++;
+            } catch (e2) {
+              totalSkipped++;
+            }
+          }
+        }
+      }
+    }
+    log(`  ${entry.name}: pages ${chunkStart + 1}–${chunkEnd} of ${totalPages}`, 'info');
+    await new Promise(r => setTimeout(r, 10));
+  }
+
+  log(`  ${entry.name}: ${totalReplaced} drawn, ${totalSkipped} skipped — saving...`, 'info');
+  await new Promise(r => setTimeout(r, 50));
+  const pdfBytes = await srcDoc.save({ useObjectStreams: false });
+  entry.translatedBlob = new Blob([pdfBytes], { type: 'application/pdf' });
+  entry.translatedName = entry.name.replace(/\.pdf$/i, '_EN.pdf');
+}
+
+/**
+ * Word-wrap text to fit within maxChars per line.
+ * For Chinese text without spaces this falls back to char-level breaks,
+ * but since the input here is already English, word-level should be enough.
+ */
+function wrapText(text, maxChars) {
+  if (text.length <= maxChars) return [text];
+  const words = text.split(/(\s+)/);
+  const lines = [];
+  let current = '';
+  for (const w of words) {
+    if ((current + w).length > maxChars && current) {
+      lines.push(current.trim());
+      current = w.trimStart();
+    } else {
+      current += w;
+    }
+  }
+  if (current.trim()) lines.push(current.trim());
+  // If any line is still too long (one giant word), force-break
+  const final = [];
+  for (const line of lines) {
+    if (line.length <= maxChars) {
+      final.push(line);
+    } else {
+      for (let i = 0; i < line.length; i += maxChars) {
+        final.push(line.slice(i, i + maxChars));
+      }
+    }
+  }
+  return final;
+}
+
+/**
+ * Rewrite all <t>...</t> contents in an XML string, replacing the inner text
+ * via a translation map. Preserves all attributes, namespaces, surrounding
+ * whitespace and rich-text run structure.
+ */
+function rewriteXmlStrings(xml, tmap) {
+  return xml.replace(/<t\b([^>]*)>([\s\S]*?)<\/t>/g, (full, attrs, inner) => {
+    const decoded = decodeXmlEntities(inner);
+    if (tmap.has(decoded)) {
+      const translated = tmap.get(decoded);
+      // Preserve xml:space="preserve" if leading/trailing whitespace
+      let newAttrs = attrs;
+      if ((/^\s|\s$/.test(translated)) && !/xml:space/.test(newAttrs)) {
+        newAttrs = ' xml:space="preserve"' + newAttrs;
+      }
+      return `<t${newAttrs}>${encodeXmlEntities(translated)}</t>`;
+    }
+    return full;
+  });
+}
+
+// =============================================================
+// Download (ZIP of all translated files)
+// =============================================================
+$('btn-download-zip').addEventListener('click', async () => {
+  const ready = state.batch.filter(e => e.status === 'done' && e.translatedBlob);
+  if (!ready.length) {
+    alert('No translated files available yet. Run translation first.');
+    return;
+  }
+
+  if (ready.length === 1) {
+    // For single file, just download directly
+    downloadEntry(ready[0]);
+    return;
+  }
+
+  $('btn-download-zip').disabled = true;
+  $('btn-download-zip').textContent = 'Building ZIP...';
+
+  try {
+    const zip = new JSZip();
+    for (const e of ready) {
+      const arrayBuffer = await e.translatedBlob.arrayBuffer();
+      zip.file(e.translatedName, arrayBuffer);
+    }
+    const zipBlob = await zip.generateAsync({
+      type: 'blob',
+      compression: 'DEFLATE',
+      compressionOptions: { level: 6 },
+    });
+    const url = URL.createObjectURL(zipBlob);
+    const a = document.createElement('a');
+    a.href = url;
+    const ts = new Date().toISOString().slice(0, 10);
+    a.download = `translated_documents_${ts}.zip`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+    $('download-name').textContent = `${ready.length} files · ${fmtBytes(zipBlob.size)}`;
+  } catch (e) {
+    alert('Could not build ZIP: ' + e.message);
+  } finally {
+    $('btn-download-zip').disabled = false;
+    $('btn-download-zip').textContent = '↓  Download all as ZIP';
+  }
+});
+
+// =============================================================
+// Misc UI
+// =============================================================
+document.getElementById('link-about')?.addEventListener('click', e => {
+  e.preventDefault();
+  $('modal-about').classList.add('show');
+});
+$('modal-about').addEventListener('click', e => {
+  if (e.target.id === 'modal-about') e.target.classList.remove('show');
+});
+
+// Initial render
+renderStrings();
+</script>
+
+</body>
+</html>
